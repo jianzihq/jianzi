@@ -1,41 +1,69 @@
 /* The back of the clipping: the other side of the newspaper. DESIGN.md section 5. */
 
 .column {
+  --foot: 64px;
   position: relative;
-  width: 100%;
-  /* No height and no inner scrolling. A sheet of paper is as long as it is; making it a
-     fixed box with text sliding underneath turns it into a window, and windows are not
-     part of this language. The stage moves the whole sheet instead. */
+  width: var(--column-w, 640px);
+  /* No height of its own and no inner scrolling. A sheet is as long as it is; a fixed
+     box with text sliding under it is a window, and windows are not part of this
+     language. The stage moves the whole sheet. The padding is desk below the paper,
+     where the note tucked under the tear hangs out. */
+  padding-bottom: var(--foot);
 }
 
-/* The paper itself, ending where the tear begins so that nothing follows it. */
+/* Everything that makes up the paper, kept out of hit-testing so a click on the empty
+   desk under the tear reaches the column and closes it. */
+.paper {
+  position: absolute;
+  inset: 0 0 var(--foot);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Shadow for the straight head and sides. A plain box-shadow on a box that stops short
+   of the tear — no filter ever runs on a sheet thousands of pixels long, which is what
+   made scrolling judder. Its lower edge is hidden under the paper. */
+.cast {
+  position: absolute;
+  inset: 0 0 48px;
+  box-shadow: 0 22px 48px -18px rgba(40, 33, 22, 0.46);
+}
+
+/* Contact shadow along the tear: the same outline pushed down, no blur needed. */
+.shade {
+  position: absolute;
+  inset: 0;
+  clip-path: var(--tear-clip);
+  transform: translateY(5px);
+  background: rgba(30, 24, 16, 0.2);
+}
+
+/* Torn paper shows its pale inner fibres along the break. */
+.rim {
+  position: absolute;
+  inset: 0;
+  clip-path: var(--tear-clip);
+  transform: translateY(1.6px);
+  background: #faf7ef;
+}
+
 .sheet {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  /* Stops where the tear starts: 26px of ragged edge plus the 86px of desk the note is
-     tucked into. */
-  bottom: 40px;
-  z-index: 1;
+  inset: 0;
+  clip-path: var(--tear-clip);
   background-color: var(--paper);
   background-image: url('/paper/card-1.webp');
   background-repeat: repeat;
   background-blend-mode: multiply;
   background-position: var(--paper-x) var(--paper-y);
-  /* One sheet with a ragged foot, rather than a strip sitting below it. A strip has a
-     top edge of its own, and a displacement filter chews that edge too, so it never met
-     the paper above — the seam showed up as a second tear. */
-  clip-path: var(--tear-clip);
-  /* drop-shadow follows the clipped silhouette. box-shadow would outline the rectangle
-     the paper no longer has, and clip-path cuts it off in any case. */
-  filter: drop-shadow(0 18px 34px rgba(40, 33, 22, 0.44));
 }
 
+/* Bottom padding clears the deepest point the tear can reach (36px) with room to spare,
+   so no line of text is ever cut by the break. */
 .ink {
   position: relative;
   z-index: 2;
-  padding: 38px 46px 78px;
+  padding: 38px 46px 72px;
 }
 
 .masthead {
@@ -177,17 +205,18 @@
   color: var(--ink-soft);
 }
 
-/* Slipped under the torn end, most of it showing below. It is a different piece of
-   paper, so it is allowed to outlive the sheet. */
+/* A separate piece of paper slipped under the torn foot, so it may outlive the sheet.
+   Its top sits 40px up inside the paper — deeper than the tear ever reaches — so the
+   edge is always hidden, and the tall top padding keeps the words below the break. */
 .onwardSlip {
   position: absolute;
-  left: 46px;
-  top: calc(100% - 60px);
   z-index: 0;
-  padding: 13px 20px 14px;
+  left: var(--onward-left);
+  top: calc(100% - var(--foot) - 40px);
+  padding: 48px 22px 14px;
   background: var(--slip);
   border: 1px solid var(--slip-edge);
-  transform: rotate(-1.6deg);
+  transform: rotate(var(--onward-rot));
   box-shadow:
     0 1px 0 rgba(60, 50, 35, 0.12),
     0 8px 18px -6px rgba(60, 50, 35, 0.4);

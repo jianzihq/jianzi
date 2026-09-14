@@ -75,22 +75,39 @@ export function slipPose(id: string): {
 /**
  * The ragged foot of a column, as a clip path.
  *
- * A clip beats a displacement filter here because a filter chews every edge it is given,
- * including the top one, so a torn strip never meets the paper above it. This leaves the
- * top and sides straight and tears only the bottom.
+ * A clip rather than a displacement filter: a filter chews every edge it is given, so a
+ * torn strip never meets the paper above it. A clip leaves the top and sides straight by
+ * construction and tears only the bottom.
  *
- * The height walks rather than jumping, because a tear propagates along the fibres — it
- * wanders, where independent samples would come out as a sawtooth.
+ * Two scales, because a real tear has both — a slow wander as it follows the grain, and
+ * fibre-scale fuzz along the way. One coarse walk draws visible straight segments and
+ * reads as a vector zigzag. A slight slant across the width keeps it from looking ruled.
+ * The deepest point stays within 36px of the paper's foot; the tucked note relies on it.
  */
 export function tearClip(id: string): string {
-  const N = 24
-  const pts = ['0 0', '100% 0']
+  const N = 160
   let h = hash(id + 'tear')
-  let y = 14
-  for (let k = 0; k <= N; k++) {
+  const rand = (): number => {
     h = (Math.imul(h, 1103515245) + 12345) >>> 0
-    y = Math.max(3, Math.min(27, y + ((h % 13) - 6)))
-    pts.push(`${((100 * (N - k)) / N).toFixed(2)}% calc(100% - ${y}px)`)
+    return (h % 1000) / 1000
+  }
+  const slant = rand() * 16 - 8
+  let wander = 14 + rand() * 8
+  let drift = 0
+  const pts = ['0 0', '100% 0']
+  for (let k = 0; k <= N; k++) {
+    drift = Math.max(-1.4, Math.min(1.4, drift + (rand() - 0.5) * 0.8))
+    wander = Math.max(7, Math.min(26, wander + drift))
+    const fuzz = (rand() - 0.5) * 3
+    const t = (N - k) / N
+    const depth = Math.max(2, Math.min(36, wander + fuzz + slant * (t - 0.5)))
+    pts.push(`${(100 * t).toFixed(3)}% calc(100% - ${depth.toFixed(1)}px)`)
   }
   return `polygon(${pts.join(', ')})`
+}
+
+/** How the "rest is on Zhihu" note was slipped under the torn foot. */
+export function onwardPose(id: string): { left: number; rot: number } {
+  const h = hash(id + 'onward')
+  return { left: 40 + (h % 90), rot: ((h >> 7) % 41) / 10 - 3 }
 }

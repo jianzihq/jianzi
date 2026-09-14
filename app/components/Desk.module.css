@@ -60,7 +60,7 @@
   transition: opacity 380ms ease;
 }
 
-.backdrop[data-open='true'] {
+.backdrop[data-on='true'] {
   opacity: 1;
 }
 
@@ -68,98 +68,155 @@
   position: fixed;
   inset: 0;
   z-index: 21;
+  overflow: hidden;
   perspective: 2400px;
   pointer-events: none;
-  overflow: hidden;
-}
-
-/* Reading moves the whole sheet past the eye, the way a long clipping is read. The bar
-   itself is hidden: a scrollbar is a window's furniture and there is no window here. */
-.stage[data-reading='true'] {
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  outline: none;
+  /* A scrollbar is a window's furniture, and there is no window here. */
   scrollbar-width: none;
-  /* Keeps the pointer, because a wheel event has to hit-test this element to scroll it.
-     The stage covers the whole screen and sits above the backdrop, so it has to decide
-     for itself whether a click landed on paper or on desk — see the handler. */
-  pointer-events: auto;
 }
 
-.stage[data-reading='true']::-webkit-scrollbar {
+.stage::-webkit-scrollbar {
   display: none;
 }
 
-.flipper {
-  width: var(--card-w);
-  height: var(--closed-h);
-  /* Margin rather than offset, so the sheet's length is real page length once the stage
-     starts scrolling. */
-  margin: calc(50vh - var(--closed-h) / 2) auto 0;
-  transform-style: preserve-3d;
-  /* Closed, it must sit exactly where the clipping on the desk sits — same size, same
-     angle — or the moment the overlay disappears the card jumps back to a pose the
-     animation never arrived at. */
-  transform: rotateY(0deg) rotate(var(--card-tilt));
-  transition:
-    transform 720ms cubic-bezier(0.32, 0.72, 0.2, 1),
-    width 720ms cubic-bezier(0.32, 0.72, 0.2, 1),
-    height 720ms cubic-bezier(0.32, 0.72, 0.2, 1),
-    margin-top 720ms cubic-bezier(0.32, 0.72, 0.2, 1);
+/* Reading is flat. The sheet leaves 3D the moment the turn completes: a page thousands of
+   pixels long composited as a 3D layer is what made scrolling judder. */
+.stage[data-phase='reading'],
+.stage[data-phase='rewind'] {
+  perspective: none;
+}
+
+/* The whole sheet moves past the eye, the way a long clipping is read. */
+.stage[data-phase='reading'] {
+  overflow-y: auto;
+  overscroll-behavior: contain;
   pointer-events: auto;
 }
 
-.flipper[data-open='true'] {
-  width: 640px;
-  height: min(84vh, 940px);
-  margin-top: 6vh;
-  /* Around Y, with a touch of perspective: the direction a right hand turns a clipping
-     over. Growing at the same time is the point of flipping rather than expanding —
-     the turn covers the size change, which on its own would look like paper inflating. */
-  transform: rotateY(180deg) rotate(0deg);
+.flipper {
+  --turn: 720ms;
+  --half: 360ms;
+  /* Symmetric, so the card is exactly edge-on at the half-way mark — the one moment both
+     faces are invisible, and the moment every size change has to be finished by. */
+  --ease: cubic-bezier(0.65, 0, 0.35, 1);
+
+  position: relative;
+  width: var(--card-w);
+  height: var(--closed-h);
+  margin: calc(50vh - var(--closed-h) / 2) auto 0;
+  transform-style: preserve-3d;
+  /* Closed, the overlay lies exactly on the clipping it stands in for: the place, scale
+     and angle the desk is drawing that card with. The same function list as the open
+     pose, so each part interpolates on its own. */
+  transform: translate(var(--from-x), var(--from-y)) scale(var(--from-s)) rotateY(0deg)
+    rotate(var(--card-tilt));
+  pointer-events: auto;
+  /* Turning back: the turn runs the whole way, but size only starts changing once the
+     card faces the reader again. */
+  transition:
+    transform var(--turn) var(--ease),
+    width var(--half) var(--ease) var(--half),
+    height var(--half) var(--ease) var(--half),
+    margin-top var(--half) var(--ease) var(--half);
 }
 
-/* Once the turn is done the sheet takes its real length and runs off the bottom of the
-   screen. Height is the only thing that changes and the top edge stays put, so the
-   handover is invisible.
+.flipper[data-phase='turning'],
+.flipper[data-phase='prereturn'] {
+  width: var(--column-w);
+  height: var(--open-h);
+  margin-top: var(--top);
+  transform: translate(0px, 0px) scale(1) rotateY(180deg) rotate(0deg);
+}
 
-   height stays a length rather than auto. auto cannot be interpolated, so leaving
-   reading mode would snap the sheet back to one screenful in a single frame instead of
-   folding it. The measured length is written in by the component. */
-.flipper[data-reading='true'] {
-  height: var(--read-h);
+/* Turning over: every size change lands in the first half, while the front still faces
+   the reader or is edge-on, so the back comes round already at full size. */
+.flipper[data-phase='turning'] {
+  transition:
+    transform var(--turn) var(--ease),
+    width var(--half) var(--ease),
+    height var(--half) var(--ease),
+    margin-top var(--half) var(--ease);
+}
+
+/* Poses that must be arrived at instantly. */
+.flipper[data-phase='enter'],
+.flipper[data-phase='prereturn'] {
+  transition: none;
+}
+
+/* Flat and full length. Two half-turns cancel, so on screen this is the last frame of the
+   turn unchanged; and the open height already ran past the bottom of the screen, so
+   dropping the clip reveals nothing that was not off-screen already. */
+.flipper[data-phase='reading'],
+.flipper[data-phase='rewind'] {
+  width: var(--column-w);
+  height: auto;
+  margin-top: var(--top);
   margin-bottom: 14vh;
+  transform: none;
+  transform-style: flat;
+  transition: none;
 }
 
 .face {
   position: absolute;
+  top: 0;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
 
-/* Clipped while turning, released for reading. */
-.flipper:not([data-reading='true']) .back {
-  overflow: hidden;
-}
-
-/* Fixed width and centred, so the container growing around it never stretches the card
-   we are still looking at during the first half of the turn. */
+/* Fixed width and centred, so the box growing around it never stretches the card we are
+   still looking at. */
 .front {
-  top: 0;
   left: 50%;
   width: var(--card-w);
   transform: translateX(-50%);
+  /* Dimmed as much as the desk was dimming it when it was picked up. */
+  opacity: var(--from-o);
+  transition: opacity var(--half) var(--ease) var(--half);
 }
 
-/* A card carries its own tilt as an inline custom property, which no inherited value
-   can outrank. Cancel the rotation itself instead: a clipping brought to the middle to
-   be read should sit square. */
+.flipper[data-phase='turning'] .front,
+.flipper[data-phase='prereturn'] .front {
+  opacity: 1;
+}
+
+.flipper[data-phase='turning'] .front {
+  transition: opacity var(--half) var(--ease);
+}
+
+.flipper[data-phase='enter'] .front,
+.flipper[data-phase='prereturn'] .front {
+  transition: none;
+}
+
+/* The tilt lives on the flipper, so the card inside must not rotate a second time. */
 .front article {
   transform: none;
 }
 
+/* Clipped while it turns. The column inside keeps its own full width, so its lines are
+   already broken where they will be when it is read. */
 .back {
-  inset: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  overflow: hidden;
   transform: rotateY(180deg);
+}
+
+.flipper[data-phase='reading'] .front,
+.flipper[data-phase='rewind'] .front {
+  display: none;
+}
+
+.flipper[data-phase='reading'] .back,
+.flipper[data-phase='rewind'] .back {
+  position: relative;
+  height: auto;
+  overflow: visible;
+  transform: none;
 }
 
 .closeHint {
@@ -173,10 +230,10 @@
   letter-spacing: 0.18em;
   color: var(--paper);
   opacity: 0;
-  transition: opacity 380ms ease 220ms;
+  transition: opacity 380ms ease;
   pointer-events: none;
 }
 
-.closeHint[data-open='true'] {
+.closeHint[data-on='true'] {
   opacity: 0.55;
 }
