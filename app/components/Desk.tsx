@@ -25,7 +25,6 @@ import { ListView } from './ListView'
 import { Shelf, DragGhost } from './Shelf'
 import { useCollect } from './useCollect'
 import styles from './Desk.module.css'
-import guideStyles from './GuideCard.module.css'
 
 /** How hard the drawn position chases the one input asked for. Lower is more syrup. */
 const CHASE = 0.12
@@ -159,9 +158,36 @@ export function Desk({ cards }: { cards: CardData[] }) {
   )
 
   const guideSeen = useSyncExternalStore(subscribeGuide, readGuideSeen, serverGuideSeen)
-  const showGuide = view === 'compact' && !listOpen && !guideSeen
+  /** The compact cell that holds the guide. Picked once, so panning moves it with the desk. */
+  const [guideKey, setGuideKey] = useState<string | null>(null)
+  const showGuide = view === 'compact' && !listOpen && !guideSeen && guideKey !== null
   const showGuideRef = useRef(false)
   showGuideRef.current = showGuide
+
+  const placedGuide = useRef(false)
+  useLayoutEffect(() => {
+    if (guideSeen || view !== 'compact' || listOpen) {
+      placedGuide.current = false
+      return
+    }
+    if (placedGuide.current) return
+    placedGuide.current = true
+    size.current = { x: window.innerWidth, y: window.innerHeight }
+    const L = LAYOUTS.compact
+    const mid = {
+      x: current.current.x + size.current.x / 2,
+      y: current.current.y + size.current.y / 2,
+    }
+    const cell = cellAt(mid.x, mid.y, L)
+    setGuideKey(`${cell.i},${cell.j}`)
+    // Park the lamp on that card. current chases, so the desk slides rather than jumps.
+    const pos = slotCentre(cell.i, cell.j, L)
+    target.current = {
+      x: pos.x - size.current.x / 2,
+      y: pos.y - size.current.y / 2,
+    }
+    dirty.current = true
+  }, [guideSeen, view, listOpen])
 
   const registerSlot = useCallback((slot: Slot) => (el: HTMLDivElement | null) => {
     if (el) nodes.current.set(slot.key, { el, x: slot.x, y: slot.y, drift: slot.drift })
@@ -189,15 +215,14 @@ export function Desk({ cards }: { cards: CardData[] }) {
         // while a card has been lifted off it to be filed.
         if (isOpen.current || listRef.current || isLifting()) return
         if (Math.hypot(movement[0], movement[1]) > 5) moved.current = true
-        // Dragging the desk itself is putting the note aside. A small fidget while
-        // reading it should not count.
-        if (showGuideRef.current && Math.hypot(movement[0], movement[1]) > 80) dismissGuide()
         target.current.x -= dx
         target.current.y -= dy
         if (last) {
           // A pointer flick carries nothing on its own, so give it momentum here.
           target.current.x -= velocity[0] * direction[0] * THROW * 1000
           target.current.y -= velocity[1] * direction[1] * THROW * 1000
+          // The note is a card on the desk: dragging the desk is swiping it aside.
+          if (showGuideRef.current && Math.hypot(movement[0], movement[1]) > 80) dismissGuide()
         }
       },
       // Trackpads and wheels arrive here. No momentum is added: macOS already sends a
@@ -665,46 +690,36 @@ export function Desk({ cards }: { cards: CardData[] }) {
         }
       >
         <div ref={plane} className={styles.plane}>
-          {slots.map((slot) => (
-            <div
-              key={slot.key}
-              ref={registerSlot(slot)}
-              className={styles.slot}
-              data-card={cards[slot.index].id}
-              style={{
-                left: slot.x,
-                top: slot.y,
-                visibility: opened?.key === slot.key ? 'hidden' : undefined,
-              }}
-              onPointerDown={(e) => {
-                moved.current = false
-                pressCard(e, cards[slot.index])
-              }}
-              onClick={() => open(slot)}
-            >
-              <Card card={cards[slot.index]} />
-            </div>
-          ))}
+          {slots.map((slot) => {
+            const guiding = showGuide && slot.key === guideKey
+            return (
+              <div
+                key={slot.key}
+                ref={registerSlot(slot)}
+                className={styles.slot}
+                data-card={guiding ? undefined : cards[slot.index].id}
+                style={{
+                  left: slot.x,
+                  top: slot.y,
+                  visibility: opened?.key === slot.key ? 'hidden' : undefined,
+                }}
+                onPointerDown={(e) => {
+                  moved.current = false
+                  if (!guiding) pressCard(e, cards[slot.index])
+                }}
+                onClick={() => {
+                  if (guiding) {
+                    if (!moved.current) dismissGuide()
+                    return
+                  }
+                  open(slot)
+                }}
+              >
+                {guiding ? <GuideCard /> : <Card card={cards[slot.index]} />}
+              </div>
+            )
+          })}
         </div>
-
-        {showGuide && (
-          <div
-            className={guideStyles.guide}
-            role="button"
-            tabIndex={0}
-            aria-label="桌上的说明。点它或把桌子拖开，这张就会收走。"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => dismissGuide()}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                dismissGuide()
-              }
-            }}
-          >
-            <GuideCard />
-          </div>
-        )}
 
         <div className={styles.hud}>拖动 · 触控板两指 · 方向键 / WASD · 按住卡片拖进左侧标签</div>
 
