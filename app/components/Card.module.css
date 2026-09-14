@@ -213,6 +213,28 @@
   -webkit-line-clamp: 10;
   -webkit-box-orient: vertical;
   overflow: hidden;
+
+  /* The clamp cuts hard on a line boundary, which reads as an ending rather than as a
+     passage that keeps going. The ink thins out toward the foot instead.
+     Eased rather than linear: a straight ramp is a flat-design wash, while holding
+     density and then dropping away reads as a press running dry. */
+  --fade-hold: 48%;
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 var(--fade-hold),
+    rgba(0, 0, 0, 0.74) 70%,
+    rgba(0, 0, 0, 0.3) 88%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 var(--fade-hold),
+    rgba(0, 0, 0, 0.74) 70%,
+    rgba(0, 0, 0, 0.3) 88%,
+    transparent 100%
+  );
 }
 
 /* The first sentence carries a little more weight, the way a lede does. */
