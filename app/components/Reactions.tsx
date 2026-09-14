@@ -68,32 +68,34 @@ export function ReactionMenu({ x, y, reaction, onChoose, onClose }: MenuProps) {
   )
 }
 
-type StampProps = {
-  /** Only while the column is being read; they step away as it turns. */
+type RibbonProps = {
+  /** Only while the column is being read; they slide away with it as it turns. */
   on: boolean
   reaction: Reaction | null
   onChoose: (reaction: Reaction) => void
 }
 
 /**
- * The considered way: two stamps resting on the desk beside the open column, the way a
- * proofreader keeps a stamp next to the page rather than on it. The chosen one is inked red;
- * pressing it again lifts the ink.
+ * The considered way to react: two ribbons tucked under the right edge of the open column,
+ * the way a ribbon marks a page. They belong to the sheet rather than lying loose on the desk.
+ * The chosen one is drawn further out and turns red; choosing it again tucks it back.
+ *
+ * Rendered inside the stage and before the sheet, so the paper lies over their roots.
  */
-export function ReactionStamps({ on, reaction, onChoose }: StampProps) {
+export function ReactionRibbons({ on, reaction, onChoose }: RibbonProps) {
   return (
-    <div className={styles.stamps} data-on={on} role="group" aria-label="这张怎么样">
+    <div className={styles.ribbons} data-on={on} role="group" aria-label="这张怎么样">
       {MARKS.map((mark) => (
         <button
           key={mark.id}
           type="button"
-          className={styles.stamp}
+          className={styles.ribbon}
           data-mark={mark.id}
           aria-pressed={reaction === mark.id}
           disabled={!on}
           onClick={() => onChoose(mark.id)}
         >
-          {mark.label}
+          <span className={styles.band}>{mark.label}</span>
         </button>
       ))}
     </div>

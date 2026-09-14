@@ -40,78 +40,107 @@
   color: var(--registration);
 }
 
-/* ---- the stamps beside the column ---- */
+/* ---- the ribbons under the column ---- */
 
-.stamps {
+.ribbons {
+  /* How much of each ribbon lies under the paper. */
+  --tuck: 44px;
   position: fixed;
-  z-index: 23;
-  top: 30vh;
-  /* On the desk just right of the paper (the column is min(640px, 100vw - 48px) wide and
-     centred). A screen too narrow for that gets them at its right edge instead. */
-  left: min(calc(50% + min(320px, 50vw - 24px) + 40px), calc(100vw - 118px));
+  z-index: 0;
+  top: 20vh;
+  /* Rooted under the paper's right edge: the column is min(640px, 100vw - 48px) wide and
+     centred. Fixed rather than scrolled with the sheet, so they are still at hand when the
+     reader reaches the foot of a long answer. */
+  left: calc(50% + min(320px, 50vw - 24px) - var(--tuck));
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  align-items: flex-start;
+  gap: 14px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 380ms ease;
 }
 
-.stamps[data-on='true'] {
+.ribbons[data-on='true'] {
   opacity: 1;
+}
+
+.ribbon {
+  /* How far it reaches out past the paper. */
+  --reach: 112px;
+  display: block;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  pointer-events: none;
+  /* Swung about the root, so the end under the paper stays where it is. */
+  transform-origin: 0 50%;
+  /* The shadow lives on the button: a clip-path on the same element would cut it away. */
+  filter: drop-shadow(0 3px 3px rgba(20, 16, 10, 0.35));
+}
+
+.ribbons[data-on='true'] .ribbon {
   pointer-events: auto;
 }
 
-/* A rubber stamp lying on its side: a kraft block with the word cut into it, not yet inked. */
-.stamp {
-  min-width: 90px;
-  padding: 12px 14px 10px 18px;
+.ribbon[data-mark='liked'] {
+  rotate: 3deg;
+}
+
+.ribbon[data-mark='disliked'] {
+  rotate: -2deg;
+}
+
+.band {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: calc(var(--tuck) + var(--reach));
+  height: 30px;
+  padding: 0 24px 0 calc(var(--tuck) + 14px);
   font-family: var(--song);
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.3em;
+  white-space: nowrap;
   color: var(--ink-soft);
-  background: var(--slip);
-  border: 1px solid var(--slip-edge);
-  border-radius: 2px;
+  background-color: #ebe3d1;
   box-shadow:
-    0 1px 1px rgba(60, 50, 35, 0.2),
-    0 10px 18px -8px rgba(30, 24, 16, 0.55);
-  cursor: pointer;
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(60, 50, 35, 0.14);
+  /* A swallowtail cut into the free end. */
+  clip-path: polygon(0 0, 100% 0, calc(100% - 11px) 50%, 100% 100%, 0 100%);
   transition:
+    width 240ms cubic-bezier(0.3, 0.7, 0.2, 1),
     color 160ms ease,
-    box-shadow 160ms ease,
-    translate 160ms ease;
+    background-color 160ms ease;
 }
 
-.stamp[data-mark='liked'] {
-  rotate: -3deg;
+.ribbon:hover {
+  --reach: 122px;
 }
 
-.stamp[data-mark='disliked'] {
-  rotate: 2.5deg;
-}
-
-.stamp:hover {
+.ribbon:hover .band {
   color: var(--ink);
-  translate: -3px 0;
 }
 
-.stamp:focus-visible {
-  outline: 2px solid var(--pencil);
+/* Chosen: drawn out further, in the red the domain stamp is printed in. */
+.ribbon[aria-pressed='true'] {
+  --reach: 150px;
+}
+
+.ribbon[aria-pressed='true'] .band,
+.ribbon[aria-pressed='true']:hover .band {
+  color: var(--paper);
+  background-color: var(--registration);
+}
+
+.ribbon:focus-visible {
+  outline: 2px solid var(--paper);
   outline-offset: 3px;
 }
 
-/* Chosen: pressed into the red the domain stamp is printed in. */
-.stamp[aria-pressed='true'] {
-  color: var(--registration);
-  border-color: var(--registration);
-  box-shadow:
-    inset 0 0 0 1px var(--registration),
-    0 1px 1px rgba(60, 50, 35, 0.2),
-    0 4px 8px -4px rgba(30, 24, 16, 0.5);
-}
-
-.stamp:disabled {
+.ribbon:disabled {
   cursor: default;
 }

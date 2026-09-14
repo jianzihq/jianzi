@@ -33,7 +33,7 @@ import { Card } from './Card'
 import { Column } from './Column'
 import { GuideCard } from './GuideCard'
 import { ListView } from './ListView'
-import { ReactionMenu, ReactionStamps } from './Reactions'
+import { ReactionMenu, ReactionRibbons } from './Reactions'
 import { Shelf, DragGhost } from './Shelf'
 import { useCollect, pulse } from './useCollect'
 import styles from './Desk.module.css'
@@ -847,6 +847,14 @@ export function Desk({ cards }: { cards: CardData[] }) {
               tabIndex={-1}
               onClick={onStageClick}
             >
+              {/* Before the sheet, so the paper lies over the ribbons' roots. */}
+              {openedCard.id !== GUIDE_ID && (
+                <ReactionRibbons
+                  on={phase === 'reading'}
+                  reaction={reactionOf(prefs, openedCard.id)}
+                  onChoose={(reaction) => react(openedCard.id, reaction)}
+                />
+              )}
               <div
                 ref={flipper}
                 className={styles.flipper}
@@ -884,13 +892,6 @@ export function Desk({ cards }: { cards: CardData[] }) {
             <div className={styles.closeHint} data-on={phase === 'reading'}>
               ESC 或点击四周放回桌上
             </div>
-            {openedCard.id !== GUIDE_ID && (
-              <ReactionStamps
-                on={phase === 'reading'}
-                reaction={reactionOf(prefs, openedCard.id)}
-                onChoose={(reaction) => react(openedCard.id, reaction)}
-              />
-            )}
           </>
         )}
       </div>
