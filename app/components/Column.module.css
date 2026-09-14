@@ -206,6 +206,13 @@
   border-top: 1px solid var(--rule);
 }
 
+/* The first step follows the byline's own rule; a second rule right under it would double. */
+.body h3:first-child {
+  margin-top: 22px;
+  padding-top: 0;
+  border-top: 0;
+}
+
 .figure img {
   display: block;
   width: 100%;
