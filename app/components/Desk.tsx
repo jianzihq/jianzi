@@ -9,6 +9,7 @@ import {
   pushAt,
   slotCentre,
   cellAt,
+  HOME,
   LAYOUTS,
   type Layout,
   type Slot,
@@ -55,6 +56,28 @@ const dimAt = (f: number): number => 0.3 + 0.7 * f
 
 /** The desk opens compact. The choice is not remembered — see switchView. */
 const DEFAULT_VIEW: View = 'compact'
+
+/** The desk point the screen's middle starts on: the home card itself, jitter included. */
+const HOME_AT = slotCentre(HOME.i, HOME.j, LAYOUTS[DEFAULT_VIEW])
+/** The screen the server lays the desk out for. The real one replaces it on mount. */
+const SEED_SIZE = { x: 1440, y: 900 }
+
+/**
+ * The custom properties a slot is drawn with, for a screen whose middle is at (midX, midY).
+ * The frame loop writes them live; the render gives the ones for a desk at home, so the
+ * server's paint already has every card at its depth rather than all of them full size.
+ */
+const slotVars = (x: number, y: number, drift: number, midX: number, midY: number, layout: Layout) => {
+  const f = focusAt(x - midX, y - midY)
+  const [px, py] = pushAt(x - midX, y - midY, drift, layout)
+  return {
+    '--push-x': `${px.toFixed(1)}px`,
+    '--push-y': `${py.toFixed(1)}px`,
+    '--focus': f.toFixed(3),
+    '--depth': depthAt(f, layout).toFixed(3),
+    '--dim': dimAt(f).toFixed(3),
+  }
+}
 
 /** The tabs on the right: two ways of laying out the desk, and the flat list. */
 type Tab = View | 'list'
@@ -108,10 +131,14 @@ export function Desk({ cards }: { cards: CardData[] }) {
   const viewport = useRef<HTMLDivElement>(null)
   const plane = useRef<HTMLDivElement>(null)
 
-  /** Where input has pushed the camera, and where it is actually drawn. */
-  const target = useRef<Vec>({ x: 0, y: 0 })
-  const current = useRef<Vec>({ x: 0, y: 0 })
-  const size = useRef<Vec>({ x: 1440, y: 900 })
+  /**
+   * Where input has pushed the camera, and where it is actually drawn: the desk point at the
+   * screen's top-left. Both start over the home card, and are set again for the real screen
+   * on mount.
+   */
+  const target = useRef<Vec>({ x: HOME_AT.x - SEED_SIZE.x / 2, y: HOME_AT.y - SEED_SIZE.y / 2 })
+  const current = useRef<Vec>({ x: HOME_AT.x - SEED_SIZE.x / 2, y: HOME_AT.y - SEED_SIZE.y / 2 })
+  const size = useRef<Vec>({ ...SEED_SIZE })
 
   /** Live handles for the slots on screen, so focus is written without a re-render. */
   const nodes = useRef(
@@ -142,11 +169,20 @@ export function Desk({ cards }: { cards: CardData[] }) {
   const reactedHere = useRef(new Set<string>())
   const [deal] = useState(() => createDealer(cards))
 
-  // Seeded with a laptop-sized viewport at the origin so the desk arrives with cards
+  // Seeded with a laptop-sized viewport over the home card so the desk arrives with cards
   // already on it. Dealing is deterministic, so the server and the first client render
   // agree and nothing pops in after hydration; the real viewport size refines it on mount.
   const [slots, setSlots] = useState<Slot[]>(() =>
-    deal(cellsInView(0, 0, 1440, 900, LAYOUTS[DEFAULT_VIEW]), deck),
+    deal(
+      cellsInView(
+        HOME_AT.x - SEED_SIZE.x / 2,
+        HOME_AT.y - SEED_SIZE.y / 2,
+        SEED_SIZE.x,
+        SEED_SIZE.y,
+        LAYOUTS[DEFAULT_VIEW],
+      ),
+      deck,
+    ),
   )
   const slotsRef = useRef(slots)
   const slotKeys = useRef(signature(slots))
@@ -201,6 +237,18 @@ export function Desk({ cards }: { cards: CardData[] }) {
   /** The cell that holds the guide this visit. Set once; pan, flip and tabs leave it there. */
   const [guideKey, setGuideKey] = useState<string | null>(null)
   const showGuide = guideKey !== null
+
+  // The server placed the camera for a guessed screen. Put it over the home card for this one
+  // before anything reads it. The plane is anchored at the screen's middle, so the server's
+  // paint already showed that card there and this moves nothing on screen.
+  // Declared before the guide's effect, which reads the camera to pick its cell.
+  useLayoutEffect(() => {
+    size.current = { x: window.innerWidth, y: window.innerHeight }
+    const camera = { x: HOME_AT.x - size.current.x / 2, y: HOME_AT.y - size.current.y / 2 }
+    current.current = { ...camera }
+    target.current = { ...camera }
+    dirty.current = true
+  }, [])
 
   useLayoutEffect(() => {
     if (guideKey !== null || guideSeen) return
@@ -290,8 +338,15 @@ export function Desk({ cards }: { cards: CardData[] }) {
   )
 
   useEffect(() => {
+    // A resize keeps the desk point in the middle of the screen where it was, so the card under
+    // the light stays under it instead of sliding off with the top-left corner.
     const measureViewport = () => {
-      size.current = { x: window.innerWidth, y: window.innerHeight }
+      const next = { x: window.innerWidth, y: window.innerHeight }
+      const dx = (next.x - size.current.x) / 2
+      const dy = (next.y - size.current.y) / 2
+      current.current = { x: current.current.x - dx, y: current.current.y - dy }
+      target.current = { x: target.current.x - dx, y: target.current.y - dy }
+      size.current = next
       dirty.current = true
     }
     measureViewport()
@@ -352,23 +407,19 @@ export function Desk({ cards }: { cards: CardData[] }) {
       lastY = c.y
       dirty.current = false
 
+      // The plane hangs from the screen's middle, so it moves by the desk point that sits there.
+      const L = layoutRef.current
+      const midX = c.x + size.current.x / 2
+      const midY = c.y + size.current.y / 2
       if (plane.current) {
-        plane.current.style.transform = `translate3d(${-c.x}px, ${-c.y}px, 0)`
+        plane.current.style.transform = `translate3d(${-midX}px, ${-midY}px, 0)`
       }
 
       // Depth is opacity and scale only. A real blur across this many layers would
       // cost more than the illusion is worth — see PRODUCT section 8.
-      const L = layoutRef.current
-      const midX = c.x + size.current.x / 2
-      const midY = c.y + size.current.y / 2
       for (const { el, x, y, drift } of nodes.current.values()) {
-        const f = focusAt(x - midX, y - midY)
-        const [px, py] = pushAt(x - midX, y - midY, drift, L)
-        el.style.setProperty('--push-x', `${px.toFixed(1)}px`)
-        el.style.setProperty('--push-y', `${py.toFixed(1)}px`)
-        el.style.setProperty('--focus', f.toFixed(3))
-        el.style.setProperty('--depth', depthAt(f, L).toFixed(3))
-        el.style.setProperty('--dim', dimAt(f).toFixed(3))
+        const vars = slotVars(x, y, drift, midX, midY, L)
+        for (const name in vars) el.style.setProperty(name, vars[name as keyof typeof vars])
       }
 
       // React is woken only when what is on screen actually changes: a cell arriving or
@@ -791,7 +842,13 @@ export function Desk({ cards }: { cards: CardData[] }) {
           } as React.CSSProperties
         }
       >
-        <div ref={plane} className={styles.plane}>
+        <div
+          ref={plane}
+          className={styles.plane}
+          // The desk at home, for the server's paint. These values never change between renders,
+          // so React never writes them again and the frame loop owns the transform after that.
+          style={{ transform: `translate3d(${-HOME_AT.x}px, ${-HOME_AT.y}px, 0)` }}
+        >
           {slots.map((slot) => {
             const guiding = showGuide && slot.key === guideKey
             return (
@@ -800,11 +857,17 @@ export function Desk({ cards }: { cards: CardData[] }) {
                 ref={registerSlot(slot)}
                 className={styles.slot}
                 data-card={guiding ? undefined : cards[slot.index].id}
-                style={{
-                  left: slot.x,
-                  top: slot.y,
-                  visibility: opened?.key === slot.key ? 'hidden' : undefined,
-                }}
+                style={
+                  {
+                    left: slot.x,
+                    top: slot.y,
+                    visibility: opened?.key === slot.key ? 'hidden' : undefined,
+                    // Same for a slot's pose: fixed per slot and view. Whenever React does
+                    // write it, the slot's ref marks the desk dirty and the loop draws the live
+                    // pose over it before the frame is painted.
+                    ...slotVars(slot.x, slot.y, slot.drift, HOME_AT.x, HOME_AT.y, layout),
+                  } as React.CSSProperties
+                }
                 onPointerDown={(e) => {
                   moved.current = false
                   if (!guiding) pressCard(e, cards[slot.index])

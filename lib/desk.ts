@@ -112,6 +112,12 @@ export function slotCentre(i: number, j: number, layout: Layout): { x: number; y
   }
 }
 
+/**
+ * The cell the desk opens on. Its card starts in the middle of the screen, whatever the
+ * screen's size, so the first thing under the light is a card and never the gap between four.
+ */
+export const HOME = { i: 0, j: 0 } as const
+
 /** Which cell a point in desk coordinates falls in. Jitter is far smaller than a cell,
  *  so the bare grid decides this unambiguously. */
 export function cellAt(x: number, y: number, layout: Layout): { i: number; j: number } {

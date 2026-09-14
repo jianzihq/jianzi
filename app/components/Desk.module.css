@@ -17,10 +17,13 @@
   cursor: grabbing;
 }
 
+/* The plane's origin is the middle of the screen, and the loop moves it by the desk point
+   that should sit there. A desk over its home card then needs no screen size, so the
+   server's paint already has that card in the middle and hydration moves nothing. */
 .plane {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 50%;
+  left: 50%;
   will-change: transform;
 }
 
