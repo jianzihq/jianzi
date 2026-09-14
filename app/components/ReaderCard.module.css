@@ -10,12 +10,22 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 10px;
+  /* Only what is drawn takes the pointer. The box keeps the card's footprint even when the
+     card is tucked away, and must not stop a drag of the desk starting there. */
+  pointer-events: none;
   transition: opacity 240ms ease;
+}
+
+.corner > * {
+  pointer-events: auto;
 }
 
 /* A card that is open owns the screen; the reader's card steps away with the rails. */
 .corner[data-hidden='true'] {
   opacity: 0;
+}
+
+.corner[data-hidden='true'] > * {
   pointer-events: none;
 }
 
@@ -41,8 +51,14 @@
   rotate: -1.5deg;
   cursor: pointer;
   transition:
-    translate 180ms ease,
+    translate 320ms cubic-bezier(0.3, 0.7, 0.2, 1),
+    rotate 320ms cubic-bezier(0.3, 0.7, 0.2, 1),
     box-shadow 180ms ease;
+}
+
+/* Only the unregistered card arrives. A registered one appears already tucked away, and must
+   not fly into the corner from where the login used to lie. */
+.card[data-state='anonymous'] {
   animation: arrive 320ms ease backwards;
 }
 
@@ -65,6 +81,23 @@
 .card:focus-visible {
   outline: 2px solid var(--pencil);
   outline-offset: 3px;
+}
+
+/* Registered: tucked into the corner with only the reader's portrait showing. A pointer resting
+   on it, or the keyboard reaching it, draws it out a little; a click draws it all the way out. */
+.corner[data-tucked='true'] .card {
+  translate: 256px -52px;
+  rotate: 6deg;
+}
+
+.corner[data-tucked='true'] .card:hover {
+  translate: 240px -44px;
+}
+
+/* Only as far as a resting pointer: any key pressed while it keeps focus — Escape closing its
+   menu, a desk shortcut — turns focus visible, and must not leave the card lying out. */
+.corner[data-tucked='true'] .card:focus-visible {
+  translate: 240px -44px;
 }
 
 @keyframes arrive {

@@ -21,10 +21,12 @@ const NOTICE_TEXT = {
 } as const
 
 /**
- * The reader's card, lying at the top right of the desk like a library card: the Zhihu login
- * while it is unregistered, the reader's own name once it is. A card rather than another tab,
- * because signing in is not a way of looking at the desk, and it has to be found. It steps
- * away while a card is open. docs/backend-requirements.md §4.4.
+ * The reader's card, lying at the top right of the desk like a library card. Unregistered, it
+ * lies in full view with the Zhihu login on it: a card rather than another tab, because signing
+ * in is not a way of looking at the desk, and it has to be found. Registered, it has done its
+ * asking and is tucked into the corner with only the reader's portrait showing, pulled out by a
+ * click for the name and signing out. It steps away while a card is open.
+ * docs/backend-requirements.md §4.4.
  */
 export function ReaderCard({ hidden }: { hidden: boolean }) {
   const account = useSyncExternalStore(subscribeAccount, readAccount, serverAccount)
@@ -54,7 +56,13 @@ export function ReaderCard({ hidden }: { hidden: boolean }) {
   }, [open])
 
   return (
-    <div ref={box} className={styles.corner} data-hidden={hidden} inert={hidden}>
+    <div
+      ref={box}
+      className={styles.corner}
+      data-hidden={hidden}
+      data-tucked={account.status === 'signed-in' && !open}
+      inert={hidden}
+    >
       {account.status === 'anonymous' && (
         <a className={styles.card} data-state="anonymous" href={loginHref()}>
           <span className={styles.head}>
