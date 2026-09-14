@@ -1,10 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useGesture } from '@use-gesture/react'
 import type { Card as CardData } from '@/lib/types'
 import {
-  slotsInView,
+  cellsInView,
   focusAt,
   pushAt,
   slotCentre,
@@ -15,6 +15,17 @@ import {
   type View,
 } from '@/lib/desk'
 import type { TagId } from '@/lib/collections'
+import { createDealer } from '@/lib/deal'
+import { orderDeck, spread } from '@/lib/deck'
+import {
+  reactionOf,
+  readPrefs,
+  serverPrefs,
+  subscribePrefs,
+  toggleReaction,
+  writePrefs,
+  type Reaction,
+} from '@/lib/prefs'
 import { GUIDE_ID, guideCard, readGuideSeen, rememberGuide, serverGuideSeen, subscribeGuide } from '@/lib/guide'
 import { paperOffset, paperTilt } from '@/lib/paper'
 import { domainInk } from '@/lib/domains'
@@ -22,6 +33,7 @@ import { Card } from './Card'
 import { Column } from './Column'
 import { GuideCard } from './GuideCard'
 import { ListView } from './ListView'
+import { ReactionMenu, ReactionStamps } from './Reactions'
 import { Shelf, DragGhost } from './Shelf'
 import { useCollect, pulse } from './useCollect'
 import styles from './Desk.module.css'
@@ -52,6 +64,9 @@ const TABS: { id: Tab; label: string }[] = [
 ]
 
 type Vec = { x: number; y: number }
+
+/** What is on screen: which cells, and which card each holds. A card dealt again counts. */
+const signature = (slots: Slot[]): string => slots.map((s) => `${s.key}:${s.index}`).join('|')
 
 /**
  * An opened card moves through these in order.
@@ -113,15 +128,32 @@ export function Desk({ cards }: { cards: CardData[] }) {
   /** The favourite tag the list is narrowed to, or null for every card. */
   const [filter, setFilter] = useState<TagId | null>(null)
 
+  // Likes and dislikes run the deck backwards (lib/deck.ts). The server keeps none, so the
+  // first render deals the plain order and this browser's own arrives right after.
+  const prefs = useSyncExternalStore(subscribePrefs, readPrefs, serverPrefs)
+  const base = useMemo(() => spread(cards), [cards])
+  const deck = useMemo(() => orderDeck(base, prefs), [base, prefs])
+  /** Read by the frame loop, which is bound once. */
+  const deckRef = useRef(deck)
+  const [deal] = useState(() => createDealer(cards))
+
   // Seeded with a laptop-sized viewport at the origin so the desk arrives with cards
-  // already on it. slotsInView is pure, so the server and the first client render agree
-  // and nothing pops in after hydration; the real viewport size refines it on mount.
+  // already on it. Dealing is deterministic, so the server and the first client render
+  // agree and nothing pops in after hydration; the real viewport size refines it on mount.
   const [slots, setSlots] = useState<Slot[]>(() =>
-    slotsInView(0, 0, 1440, 900, cards.length, LAYOUTS[DEFAULT_VIEW]),
+    deal(cellsInView(0, 0, 1440, 900, LAYOUTS[DEFAULT_VIEW]), deck),
   )
   const slotsRef = useRef(slots)
-  slotsRef.current = slots
-  const slotKeys = useRef(slots.map((s) => s.key).join('|'))
+  const slotKeys = useRef(signature(slots))
+  useLayoutEffect(() => {
+    slotsRef.current = slots
+  }, [slots])
+
+  // A reaction takes its card off the deck; the loop deals the cell that held it again.
+  useEffect(() => {
+    deckRef.current = deck
+    dirty.current = true
+  }, [deck])
 
   const [phase, setPhaseState] = useState<Phase>('idle')
   /** Mirrors phase for handlers and timers, which would otherwise read a stale one. */
@@ -332,9 +364,12 @@ export function Desk({ cards }: { cards: CardData[] }) {
         el.style.setProperty('--dim', dimAt(f).toFixed(3))
       }
 
-      // React is woken only when the set of slots on screen actually changes.
-      const next = slotsInView(c.x, c.y, size.current.x, size.current.y, cards.length, L)
-      const key = next.map((s) => s.key).join('|')
+      // React is woken only when what is on screen actually changes: a cell arriving or
+      // leaving, or a cell dealt a new card. The card turned over keeps its cell until it
+      // has been put back.
+      const cells = cellsInView(c.x, c.y, size.current.x, size.current.y, L)
+      const next = deal(cells, deckRef.current, openedRef.current?.key)
+      const key = signature(next)
       if (key !== slotKeys.current) {
         slotKeys.current = key
         setSlots(next)
@@ -349,7 +384,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
       window.removeEventListener('resize', measureViewport)
       window.removeEventListener('keydown', onKey)
     }
-  }, [cards.length])
+  }, [deal])
 
   /** Where the card at a desk position is on screen right now, drawn as the desk draws it. */
   const poseOf = useCallback((x: number, y: number, drift: number): Pose => {
@@ -394,6 +429,8 @@ export function Desk({ cards }: { cards: CardData[] }) {
       if (!isLive(g, 'returning')) return
       isOpen.current = false
       openedRef.current = null
+      // A card liked or disliked while open leaves the desk now that it is back in its cell.
+      dirty.current = true
       setOpened(null)
       setPhase('idle')
     },
@@ -623,20 +660,16 @@ export function Desk({ cards }: { cards: CardData[] }) {
       current.current = { ...camera }
       target.current = { ...camera }
       layoutRef.current = now
-      const nextSlots = slotsInView(
-        camera.x,
-        camera.y,
-        size.current.x,
-        size.current.y,
-        cards.length,
-        now,
+      const nextSlots = deal(
+        cellsInView(camera.x, camera.y, size.current.x, size.current.y, now),
+        deckRef.current,
       )
-      slotKeys.current = nextSlots.map((s) => s.key).join('|')
+      slotKeys.current = signature(nextSlots)
       setSlots(nextSlots)
       dirty.current = true
       setView(next)
     },
-    [cards.length],
+    [deal],
   )
 
     const chooseTab = useCallback(
@@ -710,6 +743,27 @@ export function Desk({ cards }: { cards: CardData[] }) {
 
   const showAll = useCallback(() => setFilter(null), [])
 
+  /** The right-click slip: for which card, and where the pointer was. */
+  const [menu, setMenu] = useState<{ card: CardData; x: number; y: number } | null>(null)
+  const closeMenu = useCallback(() => setMenu(null), [])
+
+  const openMenu = useCallback((e: React.MouseEvent<HTMLElement>, card: CardData) => {
+    // Once a card is turned over the column owns the pointer, and its right-click stays the
+    // browser's, for copying.
+    if (isOpen.current) return
+    e.preventDefault()
+    // Kept on screen when the click lands near an edge.
+    setMenu({
+      card,
+      x: Math.min(e.clientX, window.innerWidth - 150),
+      y: Math.min(e.clientY, window.innerHeight - 110),
+    })
+  }, [])
+
+  const react = useCallback((cardId: string, reaction: Reaction) => {
+    writePrefs(toggleReaction(readPrefs(), cardId, reaction))
+  }, [])
+
   const openedCard = opened?.card ?? null
   const layout = LAYOUTS[view]
 
@@ -736,10 +790,12 @@ export function Desk({ cards }: { cards: CardData[] }) {
             const guiding = showGuide && slot.key === guideKey
             return (
               <div
-                key={slot.key}
+                // Keyed by card too, so a cell dealt again mounts fresh and plays its arrival.
+                key={`${slot.key}:${slot.index}`}
                 ref={registerSlot(slot)}
                 className={styles.slot}
                 data-card={guiding ? undefined : cards[slot.index].id}
+                data-redealt={slot.redealt || undefined}
                 style={{
                   left: slot.x,
                   top: slot.y,
@@ -750,6 +806,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
                   if (!guiding) pressCard(e, cards[slot.index])
                 }}
                 onClick={() => open(slot)}
+                onContextMenu={guiding ? undefined : (e) => openMenu(e, cards[slot.index])}
               >
                 {guiding ? <GuideCard /> : <Card card={cards[slot.index]} />}
               </div>
@@ -758,7 +815,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
         </div>
 
         <div className={styles.hud}>
-          拖动 / 中键 · 滚轮 · 方向键 / WASD · Enter · 1 2 3 · 8 9 0
+          拖动 / 中键 · 滚轮 · 方向键 / WASD · Enter · 右键 · 1 2 3 · 8 9 0
         </div>
 
         {listOpen && (
@@ -771,6 +828,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
             onPress={pressCard}
             onShowAll={showAll}
             onRemove={remove}
+            onMenu={openMenu}
           />
         )}
 
@@ -826,6 +884,13 @@ export function Desk({ cards }: { cards: CardData[] }) {
             <div className={styles.closeHint} data-on={phase === 'reading'}>
               ESC 或点击四周放回桌上
             </div>
+            {openedCard.id !== GUIDE_ID && (
+              <ReactionStamps
+                on={phase === 'reading'}
+                reaction={reactionOf(prefs, openedCard.id)}
+                onChoose={(reaction) => react(openedCard.id, reaction)}
+              />
+            )}
           </>
         )}
       </div>
@@ -854,6 +919,18 @@ export function Desk({ cards }: { cards: CardData[] }) {
         onKeyOpen={showTag}
       />
       <DragGhost ref={ghost} />
+      {menu && (
+        <ReactionMenu
+          x={menu.x}
+          y={menu.y}
+          reaction={reactionOf(prefs, menu.card.id)}
+          onChoose={(reaction) => {
+            react(menu.card.id, reaction)
+            closeMenu()
+          }}
+          onClose={closeMenu}
+        />
+      )}
     </>
   )
 }

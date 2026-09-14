@@ -32,3 +32,23 @@ export function orderDeck(cards: Card[], prefs: Prefs): Card[] {
     })
     .map(({ card }) => card)
 }
+
+/**
+ * Lay the pool out so no domain arrives in a run. The pool comes grouped the way it was
+ * fetched, and the desk deals in deck order, so without this a whole screenful would be one
+ * domain. Each card goes by how far through its own domain it is. orderDeck keeps this
+ * order within each of its two tiers, so the interleaving survives it.
+ */
+export function spread(cards: Card[]): Card[] {
+  const total = new Map<string, number>()
+  for (const card of cards) total.set(card.domain, (total.get(card.domain) ?? 0) + 1)
+  const reached = new Map<string, number>()
+  return cards
+    .map((card, i) => {
+      const k = reached.get(card.domain) ?? 0
+      reached.set(card.domain, k + 1)
+      return { card, i, at: (k + 0.5) / (total.get(card.domain) ?? 1) }
+    })
+    .sort((a, b) => a.at - b.at || a.i - b.i)
+    .map(({ card }) => card)
+}

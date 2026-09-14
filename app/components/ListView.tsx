@@ -17,6 +17,8 @@ type Props = {
   onPress: (e: React.PointerEvent<HTMLElement>, card: CardData) => void
   onShowAll: () => void
   onRemove: (tag: TagId, id: string) => void
+  /** Right-click: like or dislike, the same slip as on the desk. */
+  onMenu: (e: React.MouseEvent<HTMLElement>, card: CardData) => void
 }
 
 /**
@@ -32,6 +34,7 @@ export function ListView({
   onPress,
   onShowAll,
   onRemove,
+  onMenu,
 }: Props) {
   const scroller = useRef<HTMLDivElement>(null)
 
@@ -93,6 +96,7 @@ export function ListView({
               style={hiddenId === card.id ? { visibility: 'hidden' } : undefined}
               onPointerDown={(e) => onPress(e, card)}
               onClick={(e) => onOpen(card, e.currentTarget)}
+              onContextMenu={(e) => onMenu(e, card)}
             >
               <Card card={card} />
               {filter && (

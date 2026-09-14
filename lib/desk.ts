@@ -1,10 +1,10 @@
 /**
  * Desk layout. Pure — no React, no browser, so it stays runnable on its own.
  *
- * The desk is an unbounded grid of cells. Which card sits in a cell is decided by the
- * cell's own coordinates, never by render order, so panning away and back puts the same
- * card in the same place. A desk whose cards move while you are not looking is not a
- * desk.
+ * The desk is an unbounded grid of cells. This file places the cells; lib/deal.ts puts
+ * cards on them, and a cell keeps its card for the visit, so panning away and back puts
+ * the same card in the same place. A desk whose cards move while you are not looking is
+ * not a desk.
  */
 
 /**
@@ -65,15 +65,22 @@ export const LAYOUTS: Record<View, Layout> = {
   },
 }
 
-export type Slot = {
+/** A place on the desk, before a card is put there. */
+export type Cell = {
   key: string
-  /** Centre of the slot in desk coordinates. */
+  /** Centre of the cell's card in desk coordinates. */
   x: number
   y: number
-  /** Index into the ordered deck. */
-  index: number
-  /** How strongly this slot takes the outward push, 0.55–1.45. Fixed per cell. */
+  /** How strongly this cell takes the outward push, 0.55–1.45. Fixed per cell. */
   drift: number
+}
+
+/** A cell with a card on it. Dealt by lib/deal.ts. */
+export type Slot = Cell & {
+  /** Index into the desk's cards. */
+  index: number
+  /** The card it held left the deck, and this one was just laid in its place. */
+  redealt: boolean
 }
 
 const hash2 = (i: number, j: number): number => {
@@ -82,15 +89,6 @@ const hash2 = (i: number, j: number): number => {
   h ^= h >>> 13
   return Math.abs(h)
 }
-
-const mod = (n: number, m: number): number => ((n % m) + m) % m
-
-/**
- * Two coprime strides instead of a hash, so no two slots in one screenful can land on
- * the same card. A hash would collide and put the same clipping on the desk twice. It
- * depends on the cell alone, so a cell holds the same card under every layout.
- */
-const deckIndex = (i: number, j: number, len: number): number => mod(i * 7 + j * 11, len)
 
 /** Cards sit off-centre in their cell, or the desk reads as a spreadsheet. */
 const jitter = (i: number, j: number, layout: Layout): [number, number] => {
@@ -123,34 +121,32 @@ export function cellAt(x: number, y: number, layout: Layout): { i: number; j: nu
 }
 
 /**
- * Every slot touching the viewport, plus a ring outside it so cards are already in the
- * DOM before they are needed.
+ * Every cell touching the viewport, plus a ring outside it so cards are already in the
+ * DOM before they are needed. Cells are keyed by grid position alone, so a cell is the
+ * same cell under every layout.
  */
-export function slotsInView(
+export function cellsInView(
   camX: number,
   camY: number,
   vw: number,
   vh: number,
-  deckLen: number,
   layout: Layout,
   ring = 1,
-): Slot[] {
-  if (deckLen <= 0) return []
-
+): Cell[] {
   const i0 = Math.floor(camX / layout.cellW) - ring
   const i1 = Math.floor((camX + vw) / layout.cellW) + ring
   const j0 = Math.floor(camY / layout.cellH) - ring
   const j1 = Math.floor((camY + vh) / layout.cellH) + ring
 
-  const slots: Slot[] = []
+  const cells: Cell[] = []
   for (let j = j0; j <= j1; j++) {
     for (let i = i0; i <= i1; i++) {
       const { x, y } = slotCentre(i, j, layout)
       const drift = 0.55 + ((hash2(i, j) >> 16) % 91) / 100
-      slots.push({ key: `${i},${j}`, x, y, index: deckIndex(i, j, deckLen), drift })
+      cells.push({ key: `${i},${j}`, x, y, drift })
     }
   }
-  return slots
+  return cells
 }
 
 /** 1 at the centre of the screen, 0 once a card is a screen away from it. */
