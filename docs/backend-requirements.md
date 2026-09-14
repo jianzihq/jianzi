@@ -161,6 +161,8 @@ Authorization: Bearer {access_token}
 - 登录入口和头像的显示；未登录时网站照常可用
 - URL 带 `?login=failed` 时，提示「登录没有成功，可以再试一次」
 
+**已实现**（`feat/login-entry`）：顶边纸签 `app/components/AccountTab.tsx`，登录状态在 `lib/account.ts`。
+
 ### 4.5 验收
 
 - 在线上 HTTPS 域名上完成一次真实授权，`/api/me` 返回自己的昵称和头像
@@ -214,6 +216,8 @@ Authorization: Bearer {access_token}
 
 - 只需要替换 `lib/collections.ts` 里浏览器存储那一层：登录状态下读写走接口，未登录或接口失败时用本地存储
 - 首次登录时调用 `merge`，把本地已有的收藏带进账号
+
+**已实现**（`feat/login-entry`）：`lib/collections.ts` 本机留镜像，改动先落本机再发接口。这台浏览器第一次遇到该账号、或有没送达的改动时调 `merge`，否则 `GET` 覆盖镜像；发送失败标记未同步并提示「收藏暂时没能同步」；退出登录清空本机镜像。
 
 ### 5.5 验收
 
