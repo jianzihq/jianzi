@@ -33,18 +33,16 @@ const FILE = { src: '/guide/file.webp', alt: '把左边的标签拖到卡上，�
 const VIEWS = { src: '/guide/views.webp', alt: '右边三个标签，或按 8 9 0' }
 
 export const GUIDE_BLOCKS: GuideBlock[] = [
-  { type: 'text', face: 'front', text: '每一张纸都能点开。先点这张，或者按 Enter。' },
+  { type: 'text', face: 'front', text: '每张纸都能翻过来，点这张试试。' },
   { type: 'figure', face: 'front', ...OPEN },
   { type: 'text', face: 'front', text: '看完放回去，拖动桌子找下一张。' },
   { type: 'figure', face: 'front', ...MOVE },
-
-  { type: 'text', face: 'back', text: '这张桌子上只有几件事，从上往下看一遍就会用了。' },
 
   { type: 'heading', face: 'back', text: '一　挪桌子' },
   {
     type: 'text',
     face: 'back',
-    text: '拖动桌子，或者按方向键、WASD，下一张会送到眼前。触控板两指、滚轮、Shift 加滚轮、按住中键拖，也都能挪。',
+    text: '拖动桌子，下一张就到眼前。方向键和 WASD 也能挪；触控板用两指，鼠标可以滚轮，也可以按住中键拖。',
   },
   { type: 'figure', face: 'back', ...MOVE },
   { type: 'figure', face: 'back', ...POINTER },
@@ -53,7 +51,7 @@ export const GUIDE_BLOCKS: GuideBlock[] = [
   {
     type: 'text',
     face: 'back',
-    text: '点一下纸，或者按 Enter，它会翻过来。背面是我们拿到的原文开头，读到撕口，余下的去知乎。看完点四周或按 Esc，放回桌上。',
+    text: '点一下纸，或者按 Enter，它就翻过来。背面是我们拿到的原文开头，读到撕口，余下的在知乎。看完点四周或者按 Esc，放回桌上。',
   },
   { type: 'figure', face: 'back', ...OPEN },
 
@@ -61,19 +59,19 @@ export const GUIDE_BLOCKS: GuideBlock[] = [
   {
     type: 'text',
     face: 'back',
-    text: '想留着，把左边的标签拖到卡上，或者按 1、2、3。点左边的标签，能看到收进去的卡。',
+    text: '想留着，就把左边的标签拖到卡上，按 1、2、3 也行。收进去的卡，点那枚标签就能看到。',
   },
   { type: 'figure', face: 'back', ...FILE },
 
-  { type: 'heading', face: 'back', text: '四　换个看法' },
-  { type: 'text', face: 'back', text: '右边三枚标签换排布：紧凑、宽松、列表，也可以按 8、9、0。' },
+  { type: 'heading', face: 'back', text: '四　换个摆法' },
+  { type: 'text', face: 'back', text: '右边三枚标签：紧凑、宽松、列表，依次对应键盘上的 8、9、0。' },
   { type: 'figure', face: 'back', ...VIEWS },
 
-  { type: 'heading', face: 'back', text: '五　喜欢与不喜欢' },
+  { type: 'heading', face: 'back', text: '五　喜不喜欢' },
   {
     type: 'text',
     face: 'back',
-    text: '右键一张卡，或者翻开后点纸边的丝带，说喜欢还是不喜欢。我们会反过来用，多给你没碰过的领域。',
+    text: '右键一张卡，或者翻开后点纸边的丝带，说喜欢还是不喜欢。我们会反着用：你碰过的领域往后放，没碰过的往前摆。',
   },
 ]
 
@@ -84,7 +82,7 @@ export const GUIDE_BODY = GUIDE_BLOCKS.filter(
   .join('\n')
 
 /** The slip is the loudest thing on a clipping, so on the guide it says the one thing to do. */
-export const GUIDE_SLIP = '点开这张，玩法都在背面。'
+export const GUIDE_SLIP = '翻过来看，背面写全了。'
 
 /** Same mark as the tab icon. A 192px cut, not the 1.8MB master. */
 export const GUIDE_AVATAR = '/brand/mark.png'
