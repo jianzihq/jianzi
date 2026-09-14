@@ -44,10 +44,10 @@
 
 ### 需求
 
-- **首次部署由前端做**（2026-09-14 晚）：项目广场要立刻交公网链接，不能等 OAuth。域名定下来会写在这里，并发给队长登记回调。
-- Vercel 项目连接 `jianzihq/jianzi` 的 `main` 分支，推送后自动部署
-- 使用固定的公网 HTTPS 域名。Vercel 自带的 `*.vercel.app` 就可以，也可以绑定自定义域名
-- **域名一定下来，立刻发给队长登记为 OAuth 回调地址，之后不要再改**
+- **首次部署由前端做**（2026-09-14 晚）：项目广场要立刻交公网链接，不能等 OAuth。
+- 当前生产域名：**https://jianzi-alpha.vercel.app**（Vercel 项目在 Teethe 账号下的 `jianzi`）。GitHub 自动部署还没接上（Vercel 连 `jianzihq/jianzi` 失败），后续推送用 `vercel --prod`，或在 Vercel 里授权 GitHub 组织后再连仓库。
+- OAuth 回调登记这个地址（路径不要改）：`https://jianzi-alpha.vercel.app/api/auth/callback`
+- 域名先不要换。换了回调就要重新登记。发给队长登记的就是上面这条。
 - Preview 部署的地址每次都不一样，OAuth 只能在 Production 域名上走通，这属于正常情况
 
 ### 环境变量
