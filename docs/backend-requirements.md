@@ -3,7 +3,7 @@
 **日期**：2026-09-14
 **提出**：前端 / 产品
 **交给**：后端
-**状态**：待实现
+**状态**：B2 / B3 已在 `feat/zhihu-oauth-collections` 实现；线上凭证与 Upstash 尚未配置
 
 ---
 
@@ -37,7 +37,7 @@
 - **后端写成 Next.js Route Handlers**，放在 `app/api/**/route.ts`，和前端同域名部署，不另起服务。同域可以省掉跨域和跨域 Cookie 的麻烦，OAuth 回调也只需要登记一个地址
 - 部署平台：**Vercel**（已定）
 - Next.js 16 和常见资料里的写法有不少差别。写代码前先读 `node_modules/next/dist/docs/` 里对应的章节（仓库里的 `AGENTS.md` 也有这条要求）
-- **新增 npm 依赖请先和前端确认**
+- **新增 npm 依赖请先和前端确认**。本次已确认并加入 `@upstash/redis`
 - 分支：在 `feat/*` 分支上开发，合并进 `main`
 
 ## 3. B1 · 部署
@@ -60,7 +60,8 @@
 | `ZHIHU_OAUTH_APP_KEY` | 换取 token | **只能在服务端** |
 | `ZHIHU_OAUTH_REDIRECT_URI` | 回调地址 | 必须和活动页登记的值逐字一致 |
 | `SESSION_SECRET` | 会话签名 / 加密 | **只能在服务端**，至少 32 字节随机值 |
-| 存储连接信息（B3） | 按所选存储命名 | **只能在服务端** |
+| `UPSTASH_REDIS_REST_URL` | B3 Redis REST 地址 | **只能在服务端** |
+| `UPSTASH_REDIS_REST_TOKEN` | B3 Redis REST token | **只能在服务端** |
 
 **不要给任何密钥加 `NEXT_PUBLIC_` 前缀**，带这个前缀的变量会被打包进前端代码，等于公开。
 
@@ -128,7 +129,7 @@ Authorization: Bearer {access_token}
 
 **第 5 步：建立会话**，然后 302 回 `next` 或 `/`
 
-- 浏览器只持有会话 Cookie：`HttpOnly; Secure; SameSite=Lax; Path=/`，有效期 7 天
+- 浏览器只持有会话 Cookie：`HttpOnly; Secure; SameSite=Lax; Path=/`，有效期 7 天。本地 `next dev`（HTTP）不设 `Secure`，否则 Cookie 写不进去；Production 仍为 `Secure`
 - **OAuth token 只在登录那一刻用来取用户信息**，之后我们不会再调用知乎，所以不需要长期保存 token。不保存是最省事、也最安全的做法
 - Vercel 是 Serverless 多实例，**不能用进程内 Map 保存会话**。可以用签名或加密的 Cookie 直接存 `{ userId, name, avatar, headline, exp }`（无状态），也可以和 B3 共用同一个存储
 
@@ -185,7 +186,7 @@ Authorization: Bearer {access_token}
 - 标签 id 固定为三个：`later`、`again`、`share`，后端**不支持新增标签**
 - 卡片 id 是**字符串**（知乎 ContentID，可能带负号），**不要转成数字**
 - 同一个标签里 id 不重复；每个标签最多 500 条
-- **存储选型由后端决定**，要求能在 Serverless 上用、免运维。最省事的是 Vercel 集成里的 Upstash Redis，一个用户存一条 JSON；Neon Postgres 或 Supabase 也可以。选定之后告诉我；如果需要新增依赖，先和我确认
+- **存储已定为 Upstash Redis**：一用户一条 JSON，键为 `collections:{hash_id}`。Vercel 集成后写入 `UPSTASH_REDIS_REST_URL` 与 `UPSTASH_REDIS_REST_TOKEN`。依赖 `@upstash/redis`
 
 ### 5.3 接口契约
 
@@ -226,7 +227,7 @@ Authorization: Bearer {access_token}
 |---|---|
 | 部署域名 | 后端决定，定下来马上告诉队长登记 |
 | `app_id` / `app_key` | 队长在活动页创建项目后领取，私下交给后端 |
-| 存储选型 | 后端决定，告诉前端 |
+| 存储选型 | 已定为 Upstash Redis |
 | 新增 npm 依赖 | 和前端确认 |
 
 ## 7. 红线
