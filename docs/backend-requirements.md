@@ -3,7 +3,7 @@
 **日期**：2026-09-14
 **提出**：前端 / 产品
 **交给**：后端
-**状态**：B2 / B3 已在 `feat/zhihu-oauth-collections` 实现；线上凭证与 Upstash 尚未配置
+**状态**：B2 / B3 已上线（PR #2）。Production 已配置 OAuth 凭证与 Upstash，真实登录与收藏存储已在 2026-09-15 验证
 
 ---
 
@@ -161,7 +161,7 @@ Authorization: Bearer {access_token}
 - 登录入口和头像的显示；未登录时网站照常可用
 - URL 带 `?login=failed` 时，提示「登录没有成功，可以再试一次」
 
-**已实现**：右上角读者证 `app/components/ReaderCard.tsx`，未登录读者第一次收藏时在左栏旁提示登录（`LoginOffer`）；登录状态在 `lib/account.ts`。
+**已实现并上线**：右上角读者证 `app/components/ReaderCard.tsx`。未登录时完整显示；登录后收进角落只露头像，点开显示昵称、一句话介绍和退出登录。未登录读者第一次收藏时在左栏旁提示登录（`LoginOffer`）。登录状态在 `lib/account.ts`。
 
 ### 4.5 验收
 
@@ -217,7 +217,7 @@ Authorization: Bearer {access_token}
 - 只需要替换 `lib/collections.ts` 里浏览器存储那一层：登录状态下读写走接口，未登录或接口失败时用本地存储
 - 首次登录时调用 `merge`，把本地已有的收藏带进账号
 
-**已实现**（`feat/login-entry`）：`lib/collections.ts` 本机留镜像，改动先落本机再发接口。这台浏览器第一次遇到该账号、或有没送达的改动时调 `merge`，否则 `GET` 覆盖镜像；发送失败标记未同步并提示「收藏暂时没能同步」；退出登录清空本机镜像。
+**已实现并上线**：`lib/collections.ts` 本机留镜像，改动先落本机再发接口。这台浏览器第一次遇到该账号、或有没送达的改动时调 `merge`，否则 `GET` 覆盖镜像；发送失败标记未同步并提示「收藏暂时没能同步」；退出登录清空本机镜像。
 
 ### 5.5 验收
 
