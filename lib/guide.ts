@@ -27,16 +27,21 @@ export const GUIDE_BLOCKS: GuideBlock[] = [
     face: 'front',
     text: '桌子可以拖。方向键和 WASD 会把下一张送到眼前。',
   },
+  { type: 'figure', face: 'front', src: '/guide/move.webp', alt: 'WASD 与方向键，移动桌子' },
   {
     type: 'text',
     face: 'front',
     text: '触控板两指，滚轮、Shift 滚轮、中键也能挪。',
   },
+  { type: 'figure', face: 'front', src: '/guide/pointer.webp', alt: '触控板两指，滚轮与中键' },
   {
     type: 'text',
     face: 'back',
     text: '点开或按 Enter，纸会翻过来。背面是我们拿到的原文开头，撕开的地方去知乎。',
   },
+  { type: 'figure', face: 'back', src: '/guide/open.webp', alt: '点卡或按 Enter，纸会翻开' },
+  { type: 'figure', face: 'back', src: '/guide/file.webp', alt: '把左边的标签拖到卡上，或按 1 2 3' },
+  { type: 'figure', face: 'back', src: '/guide/views.webp', alt: '右边三个标签，或按 8 9 0' },
 ]
 
 export const GUIDE_BODY = GUIDE_BLOCKS.filter(
