@@ -4,14 +4,20 @@
   /* One card unit: a CSS pixel at the current card scale. */
   --u: calc(1px * var(--card-scale));
 
-  /* Peripheral cards leak the title and the stamp and nothing else, which is what
-     PRODUCT section 5 asks for: reveal too much and there is no surprise left, reveal
-     nothing and it is a raffle.
+  /* Away from the middle, everything but the title and the stamp sinks to a faint
+     remainder rather than vanishing: the title still does the calling, while the page
+     under it stays visibly a page of writing. PRODUCT section 5 — reveal too much and
+     there is no surprise left, reveal nothing and it is a raffle. The floor is the one
+     number to tune; the whole card's own dimming multiplies on top of it.
      --focus comes from the desk, which writes it onto the slot every frame. The card must
      not declare it: a declaration on the element outranks the inherited value, and every
      card would believe it sits in the middle. Where nothing writes it — the list view —
      its registered initial value of 1 leaves the card fully present. */
-  --reveal: clamp(0, calc((var(--focus) - 0.5) * 2.6), 1);
+  --reveal-floor: 0.35;
+  --reveal: calc(
+    var(--reveal-floor) + (1 - var(--reveal-floor)) *
+      clamp(0, calc((var(--focus) - 0.5) * 2.6), 1)
+  );
 
   position: relative;
   width: var(--card-w);
