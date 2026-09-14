@@ -34,10 +34,7 @@ export function Card({ card }: { card: CardData }) {
         {card.domain && <span className={styles.stamp}>{card.domain}</span>}
       </div>
 
-      {/* data-text feeds the misregistered plate underneath. */}
-      <h2 className={styles.headline} data-text={card.title}>
-        {card.title}
-      </h2>
+      <h2 className={styles.headline}>{card.title}</h2>
 
       <div className={styles.byline}>
         {card.author ? (

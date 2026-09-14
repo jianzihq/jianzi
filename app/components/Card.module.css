@@ -61,8 +61,6 @@
 /* ---- headline ---- */
 
 .headline {
-  position: relative;
-  z-index: 0;
   margin: 14px 0 0;
   font-family: var(--song);
   font-size: 25px;
@@ -74,17 +72,11 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
 
-/* The colour plate that missed registration. */
-.headline::before {
-  content: attr(data-text);
-  position: absolute;
-  z-index: -1;
-  left: 1.2px;
-  top: 1.2px;
-  color: var(--registration);
-  opacity: 0.5;
+  /* The colour plate that missed registration. A shadow rather than a duplicated
+     text layer: it paints behind the glyphs and follows the same line breaking and
+     the same clamp, so it cannot drift out of register with the text it doubles. */
+  text-shadow: 1px 1.1px 0 rgba(181, 65, 47, 0.42);
 }
 
 /* ---- byline ---- */
