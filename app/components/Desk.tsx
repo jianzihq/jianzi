@@ -15,7 +15,7 @@ import {
   type View,
 } from '@/lib/desk'
 import type { TagId } from '@/lib/collections'
-import { dismissGuide, readGuideSeen, serverGuideSeen, subscribeGuide } from '@/lib/guide'
+import { GUIDE_ID, guideCard, readGuideSeen, rememberGuide, serverGuideSeen, subscribeGuide } from '@/lib/guide'
 import { paperOffset, paperTilt } from '@/lib/paper'
 import { domainInk } from '@/lib/domains'
 import { Card } from './Card'
@@ -145,7 +145,6 @@ export function Desk({ cards }: { cards: CardData[] }) {
   /** Open the list narrowed to a tag. Clicking the tag already shown goes back to every card. */
   const showTag = useCallback((tag: TagId) => {
     if (isOpen.current) return
-    dismissGuide()
     const wasList = listRef.current
     setFilter((f) => (wasList && f === tag ? null : tag))
     listRef.current = true
@@ -158,36 +157,28 @@ export function Desk({ cards }: { cards: CardData[] }) {
   )
 
   const guideSeen = useSyncExternalStore(subscribeGuide, readGuideSeen, serverGuideSeen)
-  /** The compact cell that holds the guide. Picked once, so panning moves it with the desk. */
+  /** The cell that holds the guide this visit. Set once; pan, flip and tabs leave it there. */
   const [guideKey, setGuideKey] = useState<string | null>(null)
-  const showGuide = view === 'compact' && !listOpen && !guideSeen && guideKey !== null
-  const showGuideRef = useRef(false)
-  showGuideRef.current = showGuide
+  const showGuide = guideKey !== null
 
-  const placedGuide = useRef(false)
   useLayoutEffect(() => {
-    if (guideSeen || view !== 'compact' || listOpen) {
-      placedGuide.current = false
-      return
-    }
-    if (placedGuide.current) return
-    placedGuide.current = true
+    if (guideKey !== null || guideSeen) return
     size.current = { x: window.innerWidth, y: window.innerHeight }
-    const L = LAYOUTS.compact
+    const L = layoutRef.current
     const mid = {
       x: current.current.x + size.current.x / 2,
       y: current.current.y + size.current.y / 2,
     }
     const cell = cellAt(mid.x, mid.y, L)
     setGuideKey(`${cell.i},${cell.j}`)
-    // Park the lamp on that card. current chases, so the desk slides rather than jumps.
+    rememberGuide()
     const pos = slotCentre(cell.i, cell.j, L)
     target.current = {
       x: pos.x - size.current.x / 2,
       y: pos.y - size.current.y / 2,
     }
     dirty.current = true
-  }, [guideSeen, view, listOpen])
+  }, [guideSeen, guideKey])
 
   const registerSlot = useCallback((slot: Slot) => (el: HTMLDivElement | null) => {
     if (el) nodes.current.set(slot.key, { el, x: slot.x, y: slot.y, drift: slot.drift })
@@ -221,8 +212,6 @@ export function Desk({ cards }: { cards: CardData[] }) {
           // A pointer flick carries nothing on its own, so give it momentum here.
           target.current.x -= velocity[0] * direction[0] * THROW * 1000
           target.current.y -= velocity[1] * direction[1] * THROW * 1000
-          // The note is a card on the desk: dragging the desk is swiping it aside.
-          if (showGuideRef.current && Math.hypot(movement[0], movement[1]) > 80) dismissGuide()
         }
       },
       // Trackpads and wheels arrive here. No momentum is added: macOS already sends a
@@ -238,7 +227,6 @@ export function Desk({ cards }: { cards: CardData[] }) {
           return
         }
         if (isOpen.current || listRef.current) return
-        if (showGuideRef.current && Math.hypot(dx, dy) > 40) dismissGuide()
         target.current.x += dx
         target.current.y += dy
       },
@@ -279,7 +267,6 @@ export function Desk({ cards }: { cards: CardData[] }) {
       const step = STEP[e.key.toLowerCase()]
       if (!step) return
       e.preventDefault()
-      if (showGuideRef.current) dismissGuide()
 
       // Snap to the card itself, not one cell along from wherever the pointer stopped.
       // Stepping by a cell width preserves whatever offset the drag left behind, which
@@ -460,15 +447,16 @@ export function Desk({ cards }: { cards: CardData[] }) {
   const open = useCallback(
     (slot: Slot) => {
       if (moved.current || liftedLastPress()) return
-      dismissGuide()
+      const guiding = guideKey !== null && slot.key === guideKey
+      const card = guiding ? guideCard : cards[slot.index]
       const article = nodes.current.get(slot.key)?.el.querySelector('article')
       const source: Source = { kind: 'desk', x: slot.x, y: slot.y, drift: slot.drift }
-      if (!openCard(cards[slot.index], slot.key, source, article)) return
+      if (!openCard(card, slot.key, source, article)) return
       // Bring it to the middle. The overlay travels there as part of the turn and the desk
       // card is hidden meanwhile, so the camera can take its own time.
       target.current = { x: slot.x - size.current.x / 2, y: slot.y - size.current.y / 2 }
     },
-    [cards, liftedLastPress, openCard],
+    [cards, guideKey, liftedLastPress, openCard],
   )
 
   const openFromList = useCallback(
@@ -574,15 +562,6 @@ export function Desk({ cards }: { cards: CardData[] }) {
     return () => window.removeEventListener('keydown', onEsc)
   }, [active, close])
 
-  useEffect(() => {
-    if (!showGuide) return
-    const onEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') dismissGuide()
-    }
-    window.addEventListener('keydown', onEsc)
-    return () => window.removeEventListener('keydown', onEsc)
-  }, [showGuide])
-
   // While reading, the stage covers the screen above the backdrop, so it decides for itself
   // whether a click landed on paper or on desk. Paper, ink and the note stop their own
   // clicks; what is listed here are the transparent boxes around them.
@@ -651,7 +630,6 @@ export function Desk({ cards }: { cards: CardData[] }) {
     const chooseTab = useCallback(
     (tab: Tab) => {
       if (isOpen.current) return
-      dismissGuide()
       if (tab === 'list') {
         listRef.current = true
         setListOpen(true)
@@ -707,13 +685,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
                   moved.current = false
                   if (!guiding) pressCard(e, cards[slot.index])
                 }}
-                onClick={() => {
-                  if (guiding) {
-                    if (!moved.current) dismissGuide()
-                    return
-                  }
-                  open(slot)
-                }}
+                onClick={() => open(slot)}
               >
                 {guiding ? <GuideCard /> : <Card card={cards[slot.index]} />}
               </div>
@@ -760,7 +732,8 @@ export function Desk({ cards }: { cards: CardData[] }) {
                   {
                     '--paper-x': `${paperOffset(openedCard.id).x}px`,
                     '--paper-y': `${paperOffset(openedCard.id).y}px`,
-                    '--stamp-ink': domainInk(openedCard.domain),
+                    '--stamp-ink':
+                      openedCard.id === GUIDE_ID ? 'var(--ink-soft)' : domainInk(openedCard.domain),
                     '--card-tilt': `${paperTilt(openedCard.id).toFixed(2)}deg`,
                     '--closed-h': `${opened.height}px`,
                     '--column-w': 'min(640px, calc(100vw - 48px))',
@@ -775,7 +748,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
                 }
               >
                 <div className={`${styles.face} ${styles.front}`}>
-                  <Card card={openedCard} />
+                  {openedCard.id === GUIDE_ID ? <GuideCard /> : <Card card={openedCard} />}
                 </div>
                 <div className={`${styles.face} ${styles.back}`}>
                   <div ref={sheet}>

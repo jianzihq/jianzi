@@ -35,7 +35,9 @@ export function Column({ card }: { card: CardData }) {
       <div className={styles.ink}>
         <div className={styles.masthead}>
           <span className={styles.source}>
-            知乎 · {card.stats.year} · {card.stats.votes} 赞 · {card.stats.comments} 评
+            {card.url
+              ? `知乎 · ${card.stats.year} · ${card.stats.votes} 赞 · ${card.stats.comments} 评`
+              : '见字 · 说明'}
           </span>
           {card.domain && <span className={styles.stamp}>{card.domain}</span>}
         </div>
@@ -45,9 +47,11 @@ export function Column({ card }: { card: CardData }) {
         <div className={styles.byline}>
           {card.author ? (
             <>
-              <span className={styles.portrait}>
-                <Image src={card.author.avatar} alt="" width={44} height={44} />
-              </span>
+              {card.author.avatar ? (
+                <span className={styles.portrait}>
+                  <Image src={card.author.avatar} alt="" width={44} height={44} />
+                </span>
+              ) : null}
               <span>
                 <div className={styles.name}>{card.author.name}</div>
                 {card.author.badge && <div className={styles.badge}>{card.author.badge}</div>}
@@ -74,11 +78,13 @@ export function Column({ card }: { card: CardData }) {
         )}
       </div>
 
-      <div className={styles.onwardSlip}>
-        <a className={styles.onward} href={card.url} target="_blank" rel="noopener noreferrer">
-          余下的在知乎 →
-        </a>
-      </div>
+      {card.url ? (
+        <div className={styles.onwardSlip}>
+          <a className={styles.onward} href={card.url} target="_blank" rel="noopener noreferrer">
+            余下的在知乎 →
+          </a>
+        </div>
+      ) : null}
     </div>
   )
 }
