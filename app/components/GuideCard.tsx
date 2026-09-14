@@ -1,6 +1,6 @@
 import { paperOffset, paperTilt, plateOffset, deckleIndex, slipPose } from '@/lib/paper'
 import { DECKLE_COUNT } from './Deckle'
-import { GUIDE_BODY, GUIDE_ID, GUIDE_SLIP, GUIDE_TITLE } from '@/lib/guide'
+import { GUIDE_AVATAR, GUIDE_BODY, GUIDE_ID, GUIDE_SLIP, GUIDE_TITLE } from '@/lib/guide'
 import card from './Card.module.css'
 
 /**
@@ -48,9 +48,12 @@ export function GuideCard() {
       </h2>
 
       <div className={card.byline}>
+        <span className={`${card.portrait} ${card.seal}`}>
+          <img src={GUIDE_AVATAR} alt="" width={38} height={38} />
+        </span>
         <span className={card.who}>
           <div className={card.name}>见字</div>
-          <div className={card.badge}>桌上留的一张</div>
+          <div className={card.badge}>第一次打开才有</div>
         </span>
       </div>
 

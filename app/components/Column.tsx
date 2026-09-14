@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import type { Card as CardData } from '@/lib/types'
 import { tearClip, onwardPose } from '@/lib/paper'
+import { GUIDE_ID } from '@/lib/guide'
 import styles from './Column.module.css'
 
 /**
@@ -48,8 +49,12 @@ export function Column({ card }: { card: CardData }) {
           {card.author ? (
             <>
               {card.author.avatar ? (
-                <span className={styles.portrait}>
-                  <Image src={card.author.avatar} alt="" width={44} height={44} />
+                <span className={card.id === GUIDE_ID ? `${styles.portrait} ${styles.seal}` : styles.portrait}>
+                  {card.id === GUIDE_ID ? (
+                    <img src={card.author.avatar} alt="" width={44} height={44} />
+                  ) : (
+                    <Image src={card.author.avatar} alt="" width={44} height={44} />
+                  )}
                 </span>
               ) : null}
               <span>

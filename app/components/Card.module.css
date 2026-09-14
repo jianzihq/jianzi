@@ -170,6 +170,16 @@
   background-size: calc(3 * var(--u)) calc(3 * var(--u));
 }
 
+/* The site mark is already printed on this stock. Halftone is for photos. */
+.seal img {
+  object-fit: contain;
+  filter: none;
+}
+
+.seal::after {
+  content: none;
+}
+
 .who {
   min-width: 0;
 }

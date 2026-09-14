@@ -11,12 +11,15 @@ import type { Card } from './types'
 
 export const GUIDE_ID = 'jianzi:guide'
 
-export const GUIDE_TITLE = '从中间这一张看起'
+export const GUIDE_TITLE = '这张桌子怎么用'
 
 export const GUIDE_BODY =
-  '中间这一张最清楚，旁边的字会退开一点。桌子可以拖。触控板两指也能挪。方向键会把下一张送到眼前。拖到某张停住了，点它，纸会翻过来。翻过去那一面排的是我们拿到的全部原文开头，撕口下面才去知乎。周围淡下去的是还没走到跟前的剪报。评论里有人顶回去，有人只回了一句玩笑，那些也在翻开的那一面。你在桌上遇见谁，就读谁。'
+  '桌子可以拖，方向键也能跳到下一张。点开，纸会翻过来。背面是我们拿到的原文开头，撕开的地方去知乎。'
 
-export const GUIDE_SLIP = '想留着的卡，按住再拖到左边。'
+export const GUIDE_SLIP = '想留着的卡，按住拖到左边。'
+
+/** Same mark as the tab icon. A 192px cut, not the 1.8MB master. */
+export const GUIDE_AVATAR = '/brand/mark.png'
 
 /** Same shape as a pool card so the flip and the column can take it. */
 export const guideCard: Card = {
@@ -25,14 +28,14 @@ export const guideCard: Card = {
   url: '',
   contentType: 'Answer',
   excerpt: GUIDE_BODY,
-  author: { name: '见字', badge: '桌上留的一张', avatar: '' },
+  author: { name: '见字', badge: '第一次打开才有', avatar: GUIDE_AVATAR },
   comments: [],
   stats: { votes: 0, comments: 0, year: 2026 },
   domain: '',
   reason: GUIDE_SLIP,
 }
 
-const STORAGE_KEY = 'jianzi:guide:v3'
+const STORAGE_KEY = 'jianzi:guide:v4'
 
 const listeners = new Set<() => void>()
 let cache: boolean | null = null
