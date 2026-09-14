@@ -1,8 +1,9 @@
 import Image from 'next/image'
 import type { Card as CardData } from '@/lib/types'
 import { tearClip, onwardPose } from '@/lib/paper'
-import { GUIDE_FIGURES, GUIDE_ID } from '@/lib/guide'
+import { GUIDE_ID } from '@/lib/guide'
 import { paragraphs } from '@/lib/paragraphs'
+import { GuideCopy } from './GuideCard'
 import styles from './Column.module.css'
 
 /**
@@ -67,17 +68,12 @@ export function Column({ card }: { card: CardData }) {
         {card.reason && <p className={styles.pencil}>{card.reason}</p>}
 
         <div className={styles.body}>
-          {paragraphs(card.excerpt).map((para, i) => (
-            <p key={i}>{para}</p>
-          ))}
+          {card.id === GUIDE_ID ? (
+            <GuideCopy face="back" figureClassName={styles.figure} />
+          ) : (
+            paragraphs(card.excerpt).map((para, i) => <p key={i}>{para}</p>)
+          )}
         </div>
-
-        {card.id === GUIDE_ID &&
-          GUIDE_FIGURES.filter((fig) => fig.face === 'back').map((fig) => (
-            <figure key={fig.src} className={styles.figure}>
-              <img src={fig.src} alt={fig.alt} />
-            </figure>
-          ))}
 
         {card.comments.length > 0 && (
           <div className={styles.letters}>

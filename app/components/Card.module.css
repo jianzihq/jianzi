@@ -252,7 +252,7 @@
 }
 
 .body p + p {
-  margin-top: 0.7em;
+  margin-top: 0.45em;
 }
 
 /* The first sentence carries a little more weight, the way a lede does. */
@@ -260,15 +260,42 @@
   font-weight: 600;
 }
 
+.copy {
+  opacity: var(--reveal);
+  margin: calc(12 * var(--u)) 0 0;
+  color: var(--ink);
+}
+
+.copy p {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: calc(15 * var(--u));
+  line-height: var(--reading);
+  text-align: justify;
+}
+
+.copy p + p,
+.copy figure + p,
+.copy p + figure {
+  margin-top: 0.55em;
+}
+
+.copy .figure {
+  margin-top: 0.55em;
+}
+
 .figure {
   opacity: var(--reveal);
-  margin: calc(14 * var(--u)) 0 0;
 }
 
 .figure img {
   display: block;
   width: 100%;
   height: auto;
+  /* Front plates are short banners. A tall drawing would shove the slip off the clipping. */
+  max-height: calc(168 * var(--u));
+  object-fit: contain;
+  object-position: center;
 }
 
 /* ---- the slip ---- */

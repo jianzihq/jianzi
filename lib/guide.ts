@@ -13,22 +13,42 @@ export const GUIDE_ID = 'jianzi:guide'
 
 export const GUIDE_TITLE = '这张桌子怎么用'
 
-export const GUIDE_BODY =
-  '桌子可以拖，方向键也能跳到下一张。点开，纸会翻过来。背面是我们拿到的原文开头，撕开的地方去知乎。'
+/**
+ * The guide is a short clipping of sentences and printed plates, in order.
+ * Figures stay out of the Zhihu excerpt and out of Markdown.
+ */
+export type GuideBlock =
+  | { type: 'text'; face: 'front' | 'back'; text: string }
+  | { type: 'figure'; face: 'front' | 'back'; src: string; alt: string }
+
+export const GUIDE_BLOCKS: GuideBlock[] = [
+  {
+    type: 'text',
+    face: 'front',
+    text: '桌子可以拖。方向键和 WASD 会把下一张送到眼前。',
+  },
+  {
+    type: 'text',
+    face: 'front',
+    text: '触控板两指，滚轮、Shift 滚轮、中键也能挪。',
+  },
+  {
+    type: 'text',
+    face: 'back',
+    text: '点开或按 Enter，纸会翻过来。背面是我们拿到的原文开头，撕开的地方去知乎。',
+  },
+]
+
+export const GUIDE_BODY = GUIDE_BLOCKS.filter(
+  (block): block is Extract<GuideBlock, { type: 'text' }> => block.type === 'text',
+)
+  .map((block) => block.text)
+  .join('\n')
 
 export const GUIDE_SLIP = '想留着的卡，按住拖到左边。'
 
 /** Same mark as the tab icon. A 192px cut, not the 1.8MB master. */
 export const GUIDE_AVATAR = '/brand/mark.png'
-
-/** Printed plates on the guide clipping. Empty until the figures handoff delivers. */
-export type GuideFigure = {
-  src: string
-  alt: string
-  face: 'front' | 'back'
-}
-
-export const GUIDE_FIGURES: GuideFigure[] = []
 
 /** Same shape as a pool card so the flip and the column can take it. */
 export const guideCard: Card = {

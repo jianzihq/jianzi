@@ -3,7 +3,7 @@
 **日期**：2026-09-14  
 **状态**：等待风格段落。§4 写上「已就绪」之前不要出图，只读材料、列疑问。  
 **技能**：Codex 使用 [$anthropic-art](https://github.com/HalfAI1102/anthropic-art)（`$anthropic-art`）做生成与反复审查。不要另写一套生图模型提示词。  
-**对接**：插图落地后由前端把路径写入 `lib/guide.ts` 的 `GUIDE_FIGURES`。本文件是唯一规格。
+**对接**：插图落地后由前端把路径按顺序写入 `lib/guide.ts` 的 `GUIDE_BLOCKS`。本文件是唯一规格。
 
 ---
 
@@ -15,7 +15,7 @@
 | 仓库根 `PRODUCT.md` | 产品只做介绍，深度还给知乎原文。不写摘要、闪卡、脑图 |
 | `jianzi/app/components/GuideCard.tsx` | 引导卡正面长什么样 |
 | `jianzi/app/components/Desk.tsx` | 桌子怎么拖、怎么翻、底栏现在写了哪些操作 |
-| `jianzi/lib/guide.ts` | `GUIDE_FIGURES` 的字段约定 |
+| `jianzi/lib/guide.ts` | `GUIDE_BLOCKS` 的字段约定 |
 | `jianzi/docs/paper-texture-handoff.md` | 卡片纸纹怎么进产品（插图是印在这张纸上的图，不是浮层） |
 
 工作目录是 `jianzi/`。线上地址 https://jianzi-alpha.vercel.app。
@@ -61,32 +61,32 @@
 - 格式：WebP 或 PNG。优先 WebP。不要 JPG。
 - 宽度：720px（卡片内容区大约 340–380 CSS 像素，2x 足够）。高度随构图，不要做成满屏海报。
 - 单张体积：小于 120KB。
-- 比例：横图，约 3:2 或 2:1。竖图会把卡片正面顶爆。
+- 比例：正面横图约 **2:1**（短色版，塞进灯下那张卡，高不超过约 170 CSS 像素）。背面可以 3:2。竖图不要。
+- 插入方式：图不是堆在文末。写进 `GUIDE_BLOCKS` 数组，插在对应那句后面。前端按数组顺序渲染。正面两句各跟一张图；背面三张跟在翻开说明后面。
+
+示例（文件齐了之后由前端填，你先按这个顺序交文件）：
+
+```ts
+export const GUIDE_BLOCKS = [
+  { type: 'text', face: 'front', text: '桌子可以拖。方向键和 WASD 会把下一张送到眼前。' },
+  { type: 'figure', face: 'front', src: '/guide/move.webp', alt: 'WASD 与方向键，移动桌子' },
+  { type: 'text', face: 'front', text: '触控板两指，滚轮、Shift 滚轮、中键也能挪。' },
+  { type: 'figure', face: 'front', src: '/guide/pointer.webp', alt: '触控板两指，滚轮与中键' },
+  { type: 'text', face: 'back', text: '点开或按 Enter，纸会翻过来。背面是我们拿到的原文开头，撕开的地方去知乎。' },
+  { type: 'figure', face: 'back', src: '/guide/open.webp', alt: '点卡或按 Enter，纸会翻开' },
+  { type: 'figure', face: 'back', src: '/guide/file.webp', alt: '按住拖到左边，或按 1 2 3' },
+  { type: 'figure', face: 'back', src: '/guide/views.webp', alt: '右边三个标签，或按 8 9 0' },
+]
+```
 - 透明：不要透明底。插图是印在报纸上的一块色版，四边可以略毛，但不要悬在透明棋盘上。
 - 文字：可以画键帽上的字母（W A S D、↑↓←→、1 2 3、8 9 0、Enter）。不要写句子、不要英文说明段落、不要水印、不要 Logo。中文标签如果出现，只允许「稍后读 / 值得再读 / 想转给谁 / 紧凑 / 宽松 / 列表」这些产品里已有的词。
 - 交付时在本文件末尾补一张表：文件名、实际宽高、体积、你自己的验收句（缩小到 360px 宽是否仍能看出是什么键、什么手势）。
 
 ### 代码挂钩（你不用改代码，但路径必须对）
 
-`jianzi/lib/guide.ts`：
+图交到 `jianzi/public/guide/`。前端按上一节的 `GUIDE_BLOCKS` 顺序挂上。`src` 不要改。`alt` 可以按画面微调。
 
-```ts
-export type GuideFigure = {
-  src: string
-  alt: string
-  face: 'front' | 'back'
-}
-
-export const GUIDE_FIGURES: GuideFigure[] = [
-  { src: '/guide/move.webp', alt: 'WASD 与方向键，移动桌子', face: 'front' },
-  { src: '/guide/pointer.webp', alt: '触控板两指，滚轮与中键', face: 'front' },
-  { src: '/guide/open.webp', alt: '点卡或按 Enter，纸会翻开', face: 'back' },
-  { src: '/guide/file.webp', alt: '按住拖到左边，或按 1 2 3', face: 'back' },
-  { src: '/guide/views.webp', alt: '右边三个标签，或按 8 9 0', face: 'back' },
-]
-```
-
-`alt` 可以按画面微调，`src` 不要改。
+不要写 Markdown，不要改知乎回答卡。
 
 ---
 

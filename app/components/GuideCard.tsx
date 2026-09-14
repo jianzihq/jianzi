@@ -1,9 +1,42 @@
 import Image from 'next/image'
 import { paperOffset, paperTilt, plateOffset, deckleIndex, slipPose } from '@/lib/paper'
 import { DECKLE_COUNT } from './Deckle'
-import { GUIDE_AVATAR, GUIDE_BODY, GUIDE_FIGURES, GUIDE_ID, GUIDE_SLIP, GUIDE_TITLE } from '@/lib/guide'
-import { paragraphs } from '@/lib/paragraphs'
+import {
+  GUIDE_AVATAR,
+  GUIDE_BLOCKS,
+  GUIDE_ID,
+  GUIDE_SLIP,
+  GUIDE_TITLE,
+  type GuideBlock,
+} from '@/lib/guide'
 import card from './Card.module.css'
+
+export function GuideCopy({
+  face,
+  figureClassName,
+}: {
+  face: 'front' | 'back'
+  figureClassName: string
+}) {
+  return GUIDE_BLOCKS.filter((block) => block.face === face).map((block, i) => (
+    <GuidePiece key={i} block={block} figureClassName={figureClassName} />
+  ))
+}
+
+function GuidePiece({
+  block,
+  figureClassName,
+}: {
+  block: GuideBlock
+  figureClassName: string
+}) {
+  if (block.type === 'text') return <p>{block.text}</p>
+  return (
+    <figure className={figureClassName}>
+      <img src={block.src} alt={block.alt} />
+    </figure>
+  )
+}
 
 /**
  * The first-visit clipping. Same stock as the deck — sheet, plate, slip — but none of
@@ -61,17 +94,9 @@ export function GuideCard() {
 
       <hr className={card.rule} />
 
-      <div className={card.body}>
-        {paragraphs(GUIDE_BODY).map((para, i) => (
-          <p key={i}>{para}</p>
-        ))}
+      <div className={card.copy}>
+        <GuideCopy face="front" figureClassName={card.figure} />
       </div>
-
-      {GUIDE_FIGURES.filter((fig) => fig.face === 'front').map((fig) => (
-        <figure key={fig.src} className={card.figure}>
-          <img src={fig.src} alt={fig.alt} />
-        </figure>
-      ))}
 
       <div className={card.slip}>{GUIDE_SLIP}</div>
     </article>

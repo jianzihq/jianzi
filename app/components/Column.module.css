@@ -175,12 +175,15 @@
   margin: 0;
   font-family: var(--serif);
   font-size: 16px;
-  line-height: 2.05;
+  line-height: 1.72;
   text-align: justify;
 }
 
-.body p + p {
-  margin-top: 1.15em;
+.body p + p,
+.body p + figure,
+.body figure + p,
+.body figure + figure {
+  margin-top: 0.7em;
 }
 
 .body p:first-child::first-line {
