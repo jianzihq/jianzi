@@ -12,6 +12,8 @@ import styles from './Column.module.css'
 export function Column({ card }: { card: CardData }) {
   return (
     <div className={styles.column}>
+      <div className={styles.sheet} />
+      <div className={styles.ink}>
       <div className={styles.masthead}>
         <span className={styles.source}>
           知乎 · {card.stats.year} · {card.stats.votes} 赞 · {card.stats.comments} 评
@@ -52,11 +54,15 @@ export function Column({ card }: { card: CardData }) {
         </div>
       )}
 
+      </div>
+
       <div className={styles.foot}>
         <div className={styles.tear} />
-        <a className={styles.onward} href={card.url} target="_blank" rel="noopener noreferrer">
-          余下的在知乎 →
-        </a>
+        <div className={styles.onwardSlip}>
+          <a className={styles.onward} href={card.url} target="_blank" rel="noopener noreferrer">
+            余下的在知乎 →
+          </a>
+        </div>
       </div>
     </div>
   )

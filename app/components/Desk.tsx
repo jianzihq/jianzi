@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useGesture } from '@use-gesture/react'
 import type { Card as CardData } from '@/lib/types'
 import { slotsInView, focusAt, slotCentre, cellAt, type Slot } from '@/lib/desk'
-import { paperOffset } from '@/lib/paper'
+import { paperOffset, paperTilt } from '@/lib/paper'
 import { domainInk } from '@/lib/domains'
 import { Card } from './Card'
 import { Column } from './Column'
@@ -33,8 +33,12 @@ export function Desk({ cards }: { cards: CardData[] }) {
   // already on it. slotsInView is pure, so the server and the first client render agree
   // and nothing pops in after hydration; the real viewport size refines it on mount.
   /** Which slot is turned over, and whether its animation has been kicked off. */
-  const [opened, setOpened] = useState<{ key: string; index: number } | null>(null)
+  const [opened, setOpened] = useState<{ key: string; index: number; height: number } | null>(
+    null,
+  )
   const [turned, setTurned] = useState(false)
+  /** Set once the turn has finished, which is when the sheet may take its real length. */
+  const [reading, setReading] = useState(false)
   /** A drag that travelled is not a click, however it ends. */
   const moved = useRef(false)
 
@@ -174,14 +178,25 @@ export function Desk({ cards }: { cards: CardData[] }) {
     target.current.x = slot.x - half.x
     target.current.y = slot.y - half.y
     isOpen.current = true
-    setOpened({ key: slot.key, index: slot.index })
+    // The clipping's own height, so the closed pose of the overlay matches the card it
+    // replaces. offsetHeight ignores the slot's depth scale, which is what we want.
+    const card = nodes.current.get(slot.key)?.el.querySelector('article')
+    setOpened({
+      key: slot.key,
+      index: slot.index,
+      height: card instanceof HTMLElement ? card.offsetHeight : 520,
+    })
     requestAnimationFrame(() => setTurned(true))
+    window.setTimeout(() => setReading(true), 760)
   }, [])
 
   const close = useCallback(() => {
     isOpen.current = false
-    setTurned(false)
-    window.setTimeout(() => setOpened(null), 740)
+    // Back to a single screenful before the turn starts, or the sheet would be folding
+    // several thousand pixels of paper through the air.
+    setReading(false)
+    requestAnimationFrame(() => setTurned(false))
+    window.setTimeout(() => setOpened(null), 780)
   }, [])
 
   useEffect(() => {
@@ -224,15 +239,18 @@ export function Desk({ cards }: { cards: CardData[] }) {
             onClick={close}
             aria-hidden="true"
           />
-          <div className={styles.stage}>
+          <div className={styles.stage} data-reading={reading}>
             <div
               className={styles.flipper}
               data-open={turned}
+              data-reading={reading}
               style={
                 {
                   '--paper-x': `${paperOffset(openedCard.id).x}px`,
                   '--paper-y': `${paperOffset(openedCard.id).y}px`,
                   '--stamp-ink': domainInk(openedCard.domain),
+                  '--card-tilt': `${paperTilt(openedCard.id).toFixed(2)}deg`,
+                  '--closed-h': `${opened?.height ?? 520}px`,
                 } as React.CSSProperties
               }
             >

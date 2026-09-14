@@ -68,38 +68,74 @@
   position: fixed;
   inset: 0;
   z-index: 21;
-  display: grid;
-  place-items: center;
   perspective: 2400px;
   pointer-events: none;
+  overflow: hidden;
+}
+
+/* Reading moves the whole sheet past the eye, the way a long clipping is read. The bar
+   itself is hidden: a scrollbar is a window's furniture and there is no window here. */
+.stage[data-reading='true'] {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  pointer-events: auto;
+}
+
+.stage[data-reading='true']::-webkit-scrollbar {
+  display: none;
 }
 
 .flipper {
-  position: relative;
   width: var(--card-w);
-  height: 520px;
+  height: var(--closed-h);
+  /* Margin rather than offset, so the sheet's length is real page length once the stage
+     starts scrolling. */
+  margin: calc(50vh - var(--closed-h) / 2) auto 0;
   transform-style: preserve-3d;
-  transform: rotateY(0deg) scale(0.96);
+  /* Closed, it must sit exactly where the clipping on the desk sits — same size, same
+     angle — or the moment the overlay disappears the card jumps back to a pose the
+     animation never arrived at. */
+  transform: rotateY(0deg) rotate(var(--card-tilt));
   transition:
     transform 720ms cubic-bezier(0.32, 0.72, 0.2, 1),
     width 720ms cubic-bezier(0.32, 0.72, 0.2, 1),
-    height 720ms cubic-bezier(0.32, 0.72, 0.2, 1);
+    height 720ms cubic-bezier(0.32, 0.72, 0.2, 1),
+    margin-top 720ms cubic-bezier(0.32, 0.72, 0.2, 1);
   pointer-events: auto;
 }
 
 .flipper[data-open='true'] {
   width: 640px;
   height: min(84vh, 940px);
+  margin-top: 6vh;
   /* Around Y, with a touch of perspective: the direction a right hand turns a clipping
      over. Growing at the same time is the point of flipping rather than expanding —
      the turn covers the size change, which on its own would look like paper inflating. */
-  transform: rotateY(180deg) scale(1);
+  transform: rotateY(180deg) rotate(0deg);
+}
+
+/* Once the turn is done the sheet takes its real length and runs off the bottom of the
+   screen. Height is the only thing that changes, and the top edge does not move, so the
+   handover is invisible. */
+.flipper[data-reading='true'] {
+  height: auto;
+  margin-bottom: 14vh;
+  transition:
+    transform 720ms cubic-bezier(0.32, 0.72, 0.2, 1),
+    width 720ms cubic-bezier(0.32, 0.72, 0.2, 1),
+    margin-top 720ms cubic-bezier(0.32, 0.72, 0.2, 1);
 }
 
 .face {
   position: absolute;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+}
+
+/* Clipped while turning, released for reading. */
+.flipper:not([data-reading='true']) .back {
+  overflow: hidden;
 }
 
 /* Fixed width and centred, so the container growing around it never stretches the card

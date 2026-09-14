@@ -3,17 +3,33 @@
 .column {
   position: relative;
   width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 38px 46px 0;
+  /* No height and no inner scrolling. A sheet of paper is as long as it is; making it a
+     fixed box with text sliding underneath turns it into a window, and windows are not
+     part of this language. The stage moves the whole sheet instead. */
+}
 
+/* The paper itself, ending where the tear begins so that nothing follows it. */
+.sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  /* Stops where the tear starts: 26px of ragged edge plus the 86px of desk the note is
+     tucked into. */
+  bottom: 112px;
+  z-index: 0;
   background-color: var(--paper);
   background-image: url('/paper/card-1.webp');
   background-repeat: repeat;
   background-blend-mode: multiply;
   background-position: var(--paper-x) var(--paper-y);
   box-shadow: 0 24px 60px -18px rgba(40, 33, 22, 0.5);
+}
+
+.ink {
+  position: relative;
+  z-index: 1;
+  padding: 38px 46px 0;
 }
 
 .masthead {
@@ -155,33 +171,54 @@
   color: var(--ink-soft);
 }
 
-/* Where the API stops giving us text. Not hidden — made into the edge. */
+/* Where the platform stops giving us text. Not hidden — made into the edge. */
 .foot {
   position: relative;
-  margin-top: 26px;
-  padding-bottom: 40px;
+  z-index: 1;
+  margin-top: 30px;
+  /* Room for the note tucked underneath. */
+  padding-bottom: 86px;
 }
 
+/* The last of the paper. Same stock and same grain as the sheet above, ripped across.
+   Nothing comes after it — torn paper with more paper below would say the opposite of
+   what the tear is for. */
 .tear {
-  height: 22px;
-  background: var(--paper);
+  position: relative;
+  z-index: 2;
+  height: 26px;
+  background-color: var(--paper);
+  background-image: url('/paper/card-1.webp');
+  background-repeat: repeat;
+  background-blend-mode: multiply;
+  background-position: var(--paper-x) var(--paper-y);
   filter: url(#torn);
-  /* Paper colour over the desk: the displaced bottom edge is what reads as torn. */
-  box-shadow: 0 2px 3px -2px rgba(60, 50, 35, 0.4);
+}
+
+/* Slipped under the torn end, most of it showing below. It is a different piece of
+   paper, so it is allowed to outlive the sheet. */
+.onwardSlip {
+  position: absolute;
+  left: 46px;
+  top: calc(100% - 78px);
+  z-index: 1;
+  padding: 13px 20px 14px;
+  background: var(--slip);
+  border: 1px solid var(--slip-edge);
+  transform: rotate(-1.6deg);
+  box-shadow:
+    0 1px 0 rgba(60, 50, 35, 0.12),
+    0 8px 18px -6px rgba(60, 50, 35, 0.4);
 }
 
 .onward {
-  display: inline-block;
-  margin-top: 18px;
-  font-family: var(--song);
-  font-size: 15px;
+  font-family: var(--kai);
+  font-size: 16px;
   letter-spacing: 0.05em;
-  color: var(--registration);
+  color: var(--pencil);
   text-decoration: none;
-  border-bottom: 1px solid currentColor;
-  padding-bottom: 2px;
 }
 
 .onward:hover {
-  opacity: 0.72;
+  color: var(--registration);
 }
