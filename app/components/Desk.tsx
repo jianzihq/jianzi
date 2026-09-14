@@ -23,7 +23,7 @@ import { Column } from './Column'
 import { GuideCard } from './GuideCard'
 import { ListView } from './ListView'
 import { Shelf, DragGhost } from './Shelf'
-import { useCollect } from './useCollect'
+import { useCollect, pulse } from './useCollect'
 import styles from './Desk.module.css'
 
 /** How hard the drawn position chases the one input asked for. Lower is more syrup. */
@@ -119,6 +119,8 @@ export function Desk({ cards }: { cards: CardData[] }) {
   const [slots, setSlots] = useState<Slot[]>(() =>
     slotsInView(0, 0, 1440, 900, cards.length, LAYOUTS[DEFAULT_VIEW]),
   )
+  const slotsRef = useRef(slots)
+  slotsRef.current = slots
   const slotKeys = useRef(slots.map((s) => s.key).join('|'))
 
   const [phase, setPhaseState] = useState<Phase>('idle')
@@ -151,7 +153,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
     setListOpen(true)
   }, [])
 
-  const { collections, remove, pressCard, pressTag, ghost, isLifting, liftedLastPress } = useCollect(
+  const { collections, add, remove, pressCard, pressTag, ghost, isLifting, liftedLastPress } = useCollect(
     cards,
     { blocked, onTagClick: showTag },
   )
@@ -219,14 +221,24 @@ export function Desk({ cards }: { cards: CardData[] }) {
       // desk to sludge. Sign follows native scrolling, so the reader's own
       // natural-scroll setting is already baked in and must not be second-guessed.
       onWheel: ({ delta: [dx, dy], event }) => {
-        // ctrl+wheel is the trackpad pinch. Over the desk it would zoom the whole page out
-        // from under the fixed layout, so it is cancelled there. Over an open column or the
-        // list it is left alone: enlarging text to read it is a fair thing to want.
+        // ctrl+wheel is the trackpad pinch, and also what Windows sends for Ctrl+滚轮.
+        // Over the desk both are stolen so the page cannot zoom out from under the
+        // fixed layout; they pan instead. Over an open column or the list they are
+        // left alone: enlarging text to read it is a fair thing to want.
         if (event.ctrlKey) {
-          if (!isOpen.current && !listRef.current) event.preventDefault()
+          if (isOpen.current || listRef.current) return
+          event.preventDefault()
+          target.current.x += dx
+          target.current.y += dy
           return
         }
         if (isOpen.current || listRef.current) return
+        // Shift+wheel is how Windows turns a vertical wheel into a sideways scroll.
+        if (event.shiftKey) {
+          event.preventDefault()
+          target.current.x += dx || dy
+          return
+        }
         target.current.x += dx
         target.current.y += dy
       },
@@ -234,7 +246,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
     {
       target: viewport,
       eventOptions: { passive: false },
-      drag: { filterTaps: true, pointer: { touch: true } },
+      drag: { filterTaps: true, pointer: { touch: true, buttons: [1, 4] } },
     },
   )
 
@@ -445,8 +457,8 @@ export function Desk({ cards }: { cards: CardData[] }) {
   )
 
   const open = useCallback(
-    (slot: Slot) => {
-      if (moved.current || liftedLastPress()) return
+    (slot: Slot, fromKey = false) => {
+      if (!fromKey && (moved.current || liftedLastPress())) return
       const guiding = guideKey !== null && slot.key === guideKey
       const card = guiding ? guideCard : cards[slot.index]
       const article = nodes.current.get(slot.key)?.el.querySelector('article')
@@ -647,6 +659,55 @@ export function Desk({ cards }: { cards: CardData[] }) {
     [switchView],
   )
 
+  useEffect(() => {
+    const focused = (): Slot | undefined => {
+      const L = layoutRef.current
+      const mid = {
+        x: current.current.x + size.current.x / 2,
+        y: current.current.y + size.current.y / 2,
+      }
+      const cell = cellAt(mid.x, mid.y, L)
+      return slotsRef.current.find((s) => s.key === `${cell.i},${cell.j}`)
+    }
+
+    const TAG_KEYS: Record<string, TagId> = { '1': 'later', '2': 'again', '3': 'share' }
+    const TAB_KEYS: Record<string, Tab> = { '8': 'compact', '9': 'loose', '0': 'list' }
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return
+      const el = e.target as HTMLElement | null
+      if (el?.isContentEditable || /^(input|textarea|select)$/i.test(el?.tagName ?? '')) return
+
+      const tab = TAB_KEYS[e.key]
+      if (tab) {
+        if (isOpen.current) return
+        e.preventDefault()
+        chooseTab(tab)
+        return
+      }
+
+      if (isOpen.current || listRef.current) return
+
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        const slot = focused()
+        if (slot) open(slot, true)
+        return
+      }
+
+      const tag = TAG_KEYS[e.key]
+      if (!tag) return
+      e.preventDefault()
+      const slot = focused()
+      if (!slot || (guideKey !== null && slot.key === guideKey)) return
+      add(tag, cards[slot.index].id)
+      pulse(tag)
+    }
+
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [add, cards, chooseTab, guideKey, open])
+
   const showAll = useCallback(() => setFilter(null), [])
 
   const openedCard = opened?.card ?? null
@@ -659,6 +720,9 @@ export function Desk({ cards }: { cards: CardData[] }) {
         className={styles.viewport}
         data-view={view}
         data-list={listOpen}
+        onMouseDown={(e) => {
+          if (e.button === 1) e.preventDefault()
+        }}
         style={
           {
             // The list lays cards out at their design size with all of their text.
@@ -693,7 +757,9 @@ export function Desk({ cards }: { cards: CardData[] }) {
           })}
         </div>
 
-        <div className={styles.hud}>拖动 · 触控板两指 · 方向键 / WASD · 按住卡片拖进左侧标签</div>
+        <div className={styles.hud}>
+          拖动 / 中键 · 滚轮 · 方向键 / WASD · Enter · 1 2 3 · 8 9 0
+        </div>
 
         {listOpen && (
           <ListView

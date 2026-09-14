@@ -32,7 +32,7 @@ const place = (ghost: HTMLElement, x: number, y: number) => {
 }
 
 /** A small nudge on the tag that just took a card, so the filing is seen to land. */
-function pulse(tag: TagId) {
+export function pulse(tag: TagId) {
   const el = document.querySelector<HTMLElement>(`[data-tag="${tag}"]`)
   if (!el) return
   el.removeAttribute('data-pulse')
@@ -205,5 +205,5 @@ export function useCollect(cards: CardData[], { blocked, onTagClick }: Options) 
   /** The press that just ended lifted its card, so the click that follows must not open it. */
   const liftedLastPress = useCallback(() => justLifted.current, [])
 
-  return { collections, remove, pressCard, pressTag, ghost, isLifting, liftedLastPress }
+  return { collections, add, remove, pressCard, pressTag, ghost, isLifting, liftedLastPress }
 }

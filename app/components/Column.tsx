@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import type { Card as CardData } from '@/lib/types'
 import { tearClip, onwardPose } from '@/lib/paper'
+import { GUIDE_FIGURES, GUIDE_ID } from '@/lib/guide'
 import styles from './Column.module.css'
 
 /**
@@ -65,6 +66,13 @@ export function Column({ card }: { card: CardData }) {
         {card.reason && <p className={styles.pencil}>{card.reason}</p>}
 
         <p className={styles.body}>{card.excerpt}</p>
+
+        {card.id === GUIDE_ID &&
+          GUIDE_FIGURES.filter((fig) => fig.face === 'back').map((fig) => (
+            <figure key={fig.src} className={styles.figure}>
+              <img src={fig.src} alt={fig.alt} />
+            </figure>
+          ))}
 
         {card.comments.length > 0 && (
           <div className={styles.letters}>

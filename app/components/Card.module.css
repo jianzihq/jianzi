@@ -252,6 +252,17 @@
   font-weight: 600;
 }
 
+.figure {
+  opacity: var(--reveal);
+  margin: calc(14 * var(--u)) 0 0;
+}
+
+.figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 /* ---- the slip ---- */
 
 .slip {

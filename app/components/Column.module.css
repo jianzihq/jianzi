@@ -179,6 +179,16 @@
   font-weight: 600;
 }
 
+.figure {
+  margin: 22px 0 0;
+}
+
+.figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 /* Featured comments carry no author and no timestamp, so they cannot be speech
    bubbles. Set as unattributed voices from the margin instead. */
 .letters {

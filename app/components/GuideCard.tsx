@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import { paperOffset, paperTilt, plateOffset, deckleIndex, slipPose } from '@/lib/paper'
 import { DECKLE_COUNT } from './Deckle'
-import { GUIDE_AVATAR, GUIDE_BODY, GUIDE_ID, GUIDE_SLIP, GUIDE_TITLE } from '@/lib/guide'
+import { GUIDE_AVATAR, GUIDE_BODY, GUIDE_FIGURES, GUIDE_ID, GUIDE_SLIP, GUIDE_TITLE } from '@/lib/guide'
 import card from './Card.module.css'
 
 /**
@@ -61,6 +61,12 @@ export function GuideCard() {
       <hr className={card.rule} />
 
       <p className={card.body}>{GUIDE_BODY}</p>
+
+      {GUIDE_FIGURES.filter((fig) => fig.face === 'front').map((fig) => (
+        <figure key={fig.src} className={card.figure}>
+          <img src={fig.src} alt={fig.alt} />
+        </figure>
+      ))}
 
       <div className={card.slip}>{GUIDE_SLIP}</div>
     </article>

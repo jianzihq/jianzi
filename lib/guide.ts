@@ -21,6 +21,15 @@ export const GUIDE_SLIP = '想留着的卡，按住拖到左边。'
 /** Same mark as the tab icon. A 192px cut, not the 1.8MB master. */
 export const GUIDE_AVATAR = '/brand/mark.png'
 
+/** Printed plates on the guide clipping. Empty until the figures handoff delivers. */
+export type GuideFigure = {
+  src: string
+  alt: string
+  face: 'front' | 'back'
+}
+
+export const GUIDE_FIGURES: GuideFigure[] = []
+
 /** Same shape as a pool card so the flip and the column can take it. */
 export const guideCard: Card = {
   id: GUIDE_ID,
