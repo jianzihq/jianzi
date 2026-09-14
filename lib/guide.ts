@@ -29,12 +29,15 @@ export type GuideBlock =
 const MOVE = { src: '/guide/move.webp', alt: 'WASD 与方向键，把下一张送到眼前' }
 const POINTER = { src: '/guide/pointer.webp', alt: '触控板两指，滚轮、Shift 滚轮与中键' }
 const OPEN = { src: '/guide/open.webp', alt: '点卡或按 Enter，纸会翻开' }
+/** The front's own plate: wide and short, and only the one act of opening. */
+const OPEN_FRONT = { src: '/guide/open-front.webp', alt: '光标点在纸角，Enter 指向同一处，纸角翻起' }
+const REACT = { src: '/guide/react.webp', alt: '右键便签上的喜欢与不喜欢，专栏纸边的红、墨两条丝带' }
 const FILE = { src: '/guide/file.webp', alt: '把左边的标签拖到卡上，或按 1 2 3' }
 const VIEWS = { src: '/guide/views.webp', alt: '右边三个标签，或按 8 9 0' }
 
 export const GUIDE_BLOCKS: GuideBlock[] = [
   { type: 'text', face: 'front', text: '每张纸都能翻过来，点这张试试。' },
-  { type: 'figure', face: 'front', ...OPEN },
+  { type: 'figure', face: 'front', ...OPEN_FRONT },
   { type: 'text', face: 'front', text: '看完放回去，拖动桌子找下一张。' },
   { type: 'figure', face: 'front', ...MOVE },
 
@@ -73,6 +76,7 @@ export const GUIDE_BLOCKS: GuideBlock[] = [
     face: 'back',
     text: '右键一张卡，或者翻开后点纸边的丝带，说喜欢还是不喜欢。我们会反着用：你碰过的领域往后放，没碰过的往前摆。',
   },
+  { type: 'figure', face: 'back', ...REACT },
 ]
 
 export const GUIDE_BODY = GUIDE_BLOCKS.filter(
