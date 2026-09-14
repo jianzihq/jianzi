@@ -24,8 +24,12 @@
   /* Editors marked up proofs in blue pencil. The only handwriting on screen. */
   --pencil: #3f4a6b;
 
-  --card-w: 400px;
-  --card-h: 500px;
+  /* Cards are laid out larger rather than transform-scaled: slots are promoted layers,
+     and text scaled up past 1 on a promoted layer softens. Every length on the card
+     front hangs off this one number, so line breaks stay exactly where they were. */
+  --card-scale: 1.2;
+  --card-w: calc(400px * var(--card-scale));
+  --card-h: calc(500px * var(--card-scale));
   --reading: 1.95;
 
   /* Body face: a kai that reads warm without pretending to be handwritten.

@@ -20,7 +20,7 @@ const TURN_MS = 720
 const GRACE_MS = 160
 
 /** How the desk draws a card at a given focus. Shared with the overlay's closed pose. */
-const depthAt = (f: number): number => 0.86 + 0.14 * f
+const depthAt = (f: number): number => 0.78 + 0.22 * f
 const dimAt = (f: number): number => 0.3 + 0.7 * f
 
 type Vec = { x: number; y: number }

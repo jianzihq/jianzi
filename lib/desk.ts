@@ -8,8 +8,8 @@
  */
 
 /** Roughly two cells across a laptop viewport, which keeps the desk at "a few cards". */
-export const CELL_W = 760
-export const CELL_H = 920
+export const CELL_W = 580
+export const CELL_H = 740
 
 export type Slot = {
   key: string
@@ -38,7 +38,9 @@ const deckIndex = (i: number, j: number, len: number): number => mod(i * 7 + j *
 /** Cards sit off-centre in their cell, or the desk reads as a spreadsheet. */
 const jitter = (i: number, j: number): [number, number] => {
   const h = hash2(i, j)
-  return [((h % 161) - 80), (((h >> 8) % 121) - 60)]
+  // Kept well under half the gap between cards, or two neighbours can jitter into
+  // each other.
+  return [((h % 91) - 45), (((h >> 8) % 71) - 35)]
 }
 
 /**

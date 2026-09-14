@@ -1,6 +1,9 @@
 /* The clipping on the desk. See DESIGN.md section 3. */
 
 .card {
+  /* One card unit: a CSS pixel at the current card scale. */
+  --u: calc(1px * var(--card-scale));
+
   /* Peripheral cards leak the title and the stamp and nothing else, which is what
      PRODUCT section 5 asks for: reveal too much and there is no surprise left, reveal
      nothing and it is a raffle.
@@ -16,7 +19,7 @@
      leaves dead paper under the last line, and the slip — which hangs off the bottom —
      ends up marooned in that blank instead of lying over the words it replaces. */
   min-height: var(--card-h);
-  padding: 20px 22px 26px;
+  padding: calc(20 * var(--u)) calc(22 * var(--u)) calc(26 * var(--u));
   transform: rotate(var(--tilt));
 }
 
@@ -35,14 +38,14 @@
   background-blend-mode: multiply;
   background-position: var(--paper-x) var(--paper-y);
 
-  border: 1px solid var(--paper-edge);
+  border: calc(1 * var(--u)) solid var(--paper-edge);
 
   /* A sheet lying on a surface: one tight contact shadow, one soft cast. The filter
      runs after the shadow, so the shadow follows the torn edge instead of outlining a
      rectangle the paper no longer has. */
   box-shadow:
-    0 1px 1px rgba(60, 50, 35, 0.16),
-    0 8px 18px -6px rgba(60, 50, 35, 0.22);
+    0 calc(1 * var(--u)) calc(1 * var(--u)) rgba(60, 50, 35, 0.16),
+    0 calc(8 * var(--u)) calc(18 * var(--u)) calc(-6 * var(--u)) rgba(60, 50, 35, 0.22);
 
   filter: var(--deckle);
 }
@@ -59,29 +62,29 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding-bottom: 7px;
+  padding-bottom: calc(7 * var(--u));
   /* The stamp ink bleeds into this rule, so the domain survives when the stamp itself
      is covered by the card stacked on top. */
-  border-bottom: 1.5px solid var(--stamp-ink);
+  border-bottom: calc(1.5 * var(--u)) solid var(--stamp-ink);
 }
 
 .source {
   opacity: var(--reveal);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: calc(10 * var(--u));
   letter-spacing: 0.14em;
   color: var(--ink-faint);
 }
 
 .stamp {
   font-family: var(--song);
-  font-size: 12px;
+  font-size: calc(12 * var(--u));
   font-weight: 700;
   letter-spacing: 0.22em;
   color: var(--stamp-ink);
-  border: 1.5px solid var(--stamp-ink);
-  border-radius: 2px;
-  padding: 2px 6px 2px 8px;
+  border: calc(1.5 * var(--u)) solid var(--stamp-ink);
+  border-radius: calc(2 * var(--u));
+  padding: calc(2 * var(--u)) calc(6 * var(--u)) calc(2 * var(--u)) calc(8 * var(--u));
   transform: rotate(-4deg);
   opacity: 0.82;
 }
@@ -90,9 +93,9 @@
 
 .headline {
   position: relative;
-  margin: 14px 0 0;
+  margin: calc(14 * var(--u)) 0 0;
   font-family: var(--song);
-  font-size: 25px;
+  font-size: calc(25 * var(--u));
   font-weight: 700;
   line-height: 1.34;
   letter-spacing: 0.01em;
@@ -116,7 +119,7 @@
   inset: 0;
   color: var(--registration);
   opacity: 0.45;
-  transform: translate(var(--plate-x), var(--plate-y)) rotate(var(--plate-rot));
+  transform: translate(calc(var(--plate-x) * var(--card-scale)), calc(var(--plate-y) * var(--card-scale))) rotate(var(--plate-rot));
   transform-origin: 0 50%;
 }
 
@@ -131,14 +134,14 @@
   opacity: var(--reveal);
   display: flex;
   align-items: center;
-  gap: 9px;
-  margin-top: 13px;
+  gap: calc(9 * var(--u));
+  margin-top: calc(13 * var(--u));
 }
 
 .portrait {
   position: relative;
-  width: 38px;
-  height: 38px;
+  width: calc(38 * var(--u));
+  height: calc(38 * var(--u));
   flex: none;
   overflow: hidden;
 }
@@ -158,7 +161,7 @@
   position: absolute;
   inset: 0;
   background-image: radial-gradient(circle, transparent 38%, var(--paper) 41%);
-  background-size: 3px 3px;
+  background-size: calc(3 * var(--u)) calc(3 * var(--u));
 }
 
 .who {
@@ -167,14 +170,14 @@
 
 .name {
   font-family: var(--song);
-  font-size: 14px;
+  font-size: calc(14 * var(--u));
   font-weight: 700;
   letter-spacing: 0.04em;
 }
 
 .badge {
-  margin-top: 2px;
-  font-size: 11px;
+  margin-top: calc(2 * var(--u));
+  font-size: calc(11 * var(--u));
   line-height: 1.4;
   color: var(--ink-soft);
   overflow: hidden;
@@ -184,7 +187,7 @@
 
 .unsigned {
   font-family: var(--song);
-  font-size: 14px;
+  font-size: calc(14 * var(--u));
   color: var(--ink-faint);
   letter-spacing: 0.08em;
 }
@@ -192,17 +195,17 @@
 .rule {
   opacity: var(--reveal);
   border: 0;
-  border-top: 1px solid var(--rule);
-  margin: 13px 0 0;
+  border-top: calc(1 * var(--u)) solid var(--rule);
+  margin: calc(13 * var(--u)) 0 0;
 }
 
 /* ---- body ---- */
 
 .body {
   opacity: var(--reveal);
-  margin: 12px 0 0;
+  margin: calc(12 * var(--u)) 0 0;
   font-family: var(--serif);
-  font-size: 15px;
+  font-size: calc(15 * var(--u));
   line-height: var(--reading);
   text-align: justify;
   color: var(--ink);
@@ -248,22 +251,22 @@
 .slip {
   opacity: var(--reveal);
   position: absolute;
-  left: var(--slip-left);
-  bottom: var(--slip-bottom);
-  width: var(--slip-w);
-  padding: 12px 15px 13px;
+  left: calc(var(--slip-left) * var(--card-scale));
+  bottom: calc(var(--slip-bottom) * var(--card-scale));
+  width: calc(var(--slip-w) * var(--card-scale));
+  padding: calc(12 * var(--u)) calc(15 * var(--u)) calc(13 * var(--u));
 
   background: var(--slip);
-  border: 1px solid var(--slip-edge);
+  border: calc(1 * var(--u)) solid var(--slip-edge);
   transform: rotate(var(--slip-rot));
   /* Lifted a little more than the card is, so it reads as lying on the clipping rather
      than printed into it. */
   box-shadow:
-    0 1px 0 rgba(60, 50, 35, 0.12),
-    0 7px 16px -5px rgba(60, 50, 35, 0.38);
+    0 calc(1 * var(--u)) 0 rgba(60, 50, 35, 0.12),
+    0 calc(7 * var(--u)) calc(16 * var(--u)) calc(-5 * var(--u)) rgba(60, 50, 35, 0.38);
 
   font-family: var(--kai);
-  font-size: 14px;
+  font-size: calc(14 * var(--u));
   line-height: 1.72;
   color: var(--pencil);
 }
@@ -273,11 +276,11 @@
 .slip::before {
   content: '';
   position: absolute;
-  top: -7px;
-  right: var(--slip-clip);
-  width: 13px;
-  height: 22px;
-  border: 1.5px solid rgba(90, 84, 72, 0.5);
-  border-radius: 7px 7px 3px 3px;
+  top: calc(-7 * var(--u));
+  right: calc(var(--slip-clip) * var(--card-scale));
+  width: calc(13 * var(--u));
+  height: calc(22 * var(--u));
+  border: calc(1.5 * var(--u)) solid rgba(90, 84, 72, 0.5);
+  border-radius: calc(7 * var(--u)) calc(7 * var(--u)) calc(3 * var(--u)) calc(3 * var(--u));
   border-bottom-color: transparent;
 }
