@@ -11,10 +11,11 @@
 
   position: relative;
   width: var(--card-w);
-  /* Height follows the content. A long question makes a taller clipping, which is
-     variation the material earns; a randomised height would only be a dice roll. */
+  /* Height follows the content, and only the content. A floor taller than the text
+     leaves dead paper under the last line, and the slip — which hangs off the bottom —
+     ends up marooned in that blank instead of lying over the words it replaces. */
   min-height: var(--card-h);
-  padding: 20px 22px 30px;
+  padding: 20px 22px 26px;
   transform: rotate(var(--tilt));
 }
 
@@ -206,7 +207,10 @@
   color: var(--ink);
 
   display: -webkit-box;
-  -webkit-line-clamp: 7;
+  /* Enough lines to reach the foot of the clipping. Anything shorter leaves blank paper
+     under the text, and the slip then lies over nothing instead of over the words it is
+     standing in for. */
+  -webkit-line-clamp: 10;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -221,17 +225,19 @@
 .slip {
   opacity: var(--reveal);
   position: absolute;
-  left: 14px;
-  bottom: 20px;
-  width: 268px;
+  left: var(--slip-left);
+  bottom: var(--slip-bottom);
+  width: var(--slip-w);
   padding: 12px 15px 13px;
 
   background: var(--slip);
   border: 1px solid var(--slip-edge);
-  transform: rotate(-5.2deg);
+  transform: rotate(var(--slip-rot));
+  /* Lifted a little more than the card is, so it reads as lying on the clipping rather
+     than printed into it. */
   box-shadow:
-    0 1px 0 rgba(60, 50, 35, 0.1),
-    0 6px 12px -4px rgba(60, 50, 35, 0.3);
+    0 1px 0 rgba(60, 50, 35, 0.12),
+    0 7px 16px -5px rgba(60, 50, 35, 0.38);
 
   font-family: var(--kai);
   font-size: 14px;
@@ -245,7 +251,7 @@
   content: '';
   position: absolute;
   top: -7px;
-  right: 26px;
+  right: var(--slip-clip);
   width: 13px;
   height: 22px;
   border: 1.5px solid rgba(90, 84, 72, 0.5);

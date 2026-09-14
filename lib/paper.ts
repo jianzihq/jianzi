@@ -45,3 +45,29 @@ export function plateOffset(id: string): { x: number; y: number; rot: number } {
 export function deckleIndex(id: string, count: number): number {
   return hash(id + 'deckle') % count
 }
+
+/**
+ * How this card's slip was put down.
+ *
+ * Everything here varies per card. A note clipped to the same spot at the same angle on
+ * every clipping reads as a UI element stamped by a template, which is the one thing the
+ * slip must not read as — it is supposed to be the trace of a person who went through
+ * these and left a line.
+ */
+export function slipPose(id: string): {
+  width: number
+  left: number
+  bottom: number
+  rot: number
+  clip: number
+} {
+  const h = hash(id + 'slip')
+  return {
+    width: 282 + (h % 38),
+    left: 8 + ((h >> 5) % 52),
+    bottom: 14 + ((h >> 10) % 22),
+    // Mostly counter-clockwise, the way a right hand lays paper down, but not always.
+    rot: ((h >> 15) % 101) / 10 - 7.6,
+    clip: 18 + ((h >> 22) % 52),
+  }
+}

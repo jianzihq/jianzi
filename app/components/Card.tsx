@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import type { Card as CardData } from '@/lib/types'
 import { domainInk } from '@/lib/domains'
-import { paperOffset, paperTilt, plateOffset, deckleIndex } from '@/lib/paper'
+import { paperOffset, paperTilt, plateOffset, deckleIndex, slipPose } from '@/lib/paper'
 import { DECKLE_COUNT } from './Deckle'
 import styles from './Card.module.css'
 
@@ -15,6 +15,7 @@ import styles from './Card.module.css'
 export function Card({ card }: { card: CardData }) {
   const { x, y } = paperOffset(card.id)
   const plate = plateOffset(card.id)
+  const slip = slipPose(card.id)
   const ink = domainInk(card.domain)
 
   return (
@@ -30,6 +31,11 @@ export function Card({ card }: { card: CardData }) {
           '--plate-y': `${plate.y.toFixed(2)}px`,
           '--plate-rot': `${plate.rot.toFixed(3)}deg`,
           '--deckle': `url(#deckle-${deckleIndex(card.id, DECKLE_COUNT)})`,
+          '--slip-w': `${slip.width}px`,
+          '--slip-left': `${slip.left}px`,
+          '--slip-bottom': `${slip.bottom}px`,
+          '--slip-rot': `${slip.rot.toFixed(2)}deg`,
+          '--slip-clip': `${slip.clip}px`,
         } as React.CSSProperties
       }
     >
