@@ -126,8 +126,10 @@ export type RibbonPose = {
  *
  * Per card, like the slip, so the pair reads as something put there by hand rather than as a
  * control fixed to the screen. The order never changes — 喜欢 above 不喜欢 — so the reader
- * never has to look twice. The tails may lean towards each other by two degrees at most:
- * any more and a long, chosen ribbon closes the gap at its tail.
+ * never has to look twice. The two lie nearly parallel, as ribbons tucked in together do:
+ * the lower one's angle is drawn from the upper one's, at most two degrees closer at the
+ * tail, where more would let a chosen ribbon close the gap, and two and a half apart, where
+ * more fans the pair open into a V.
  */
 export function ribbonPose(id: string): RibbonPose {
   let h = hash(id + 'ribbon')
@@ -137,8 +139,8 @@ export function ribbonPose(id: string): RibbonPose {
   }
   const drop = Math.round(rand() * 110)
   const gap = 22 + Math.round(rand() * 12)
-  const upper = rand() * 8 - 6
-  const lower = Math.max(upper - 2, rand() * 8 - 2)
+  const upper = rand() * 6 - 4
+  const lower = upper - 2 + rand() * 4.5
   return {
     drop,
     gap,
