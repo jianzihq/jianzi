@@ -6,8 +6,8 @@
  *
  * Input is whatever scripts/fetch-seeds.mjs wrote: raw zhihu_search responses.
  *
- * Entry bar (PRODUCT.md section 7): an author name must be present. Roughly 60% of
- * raw results have none, and a deck of anonymous cards cannot deliver "看见一个人".
+ * Entry bar (PRODUCT.md section 7, DESIGN.md section 9.5): a Zhihu page,
+ * an author name, and an avatar that is not the anonymous placeholder.
  *
  * Avatars are downloaded to public/avatars because zhimg.com may refuse hotlinks
  * from our domain, and that failure is silent (DESIGN.md section 9).
@@ -35,6 +35,15 @@ async function saveAvatar(url) {
   return `/avatars/${name}`
 }
 
+const isZhihuUrl = (url) => {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, '')
+    return host === 'zhihu.com' || host === 'zhuanlan.zhihu.com'
+  } catch {
+    return false
+  }
+}
+
 const files = (await readdir(inputDir)).filter((f) => f.endsWith('.json'))
 const items = []
 for (const f of files) {
@@ -46,6 +55,7 @@ await mkdir(avatarDir, { recursive: true })
 const cards = []
 const seenIds = new Set()
 let skippedNoAuthor = 0
+let skippedOffsite = 0
 
 for (const it of items) {
   if (seenIds.has(it.ContentID)) continue
@@ -54,6 +64,11 @@ for (const it of items) {
   const hasAuthor = Boolean(it.AuthorName) && !String(it.AuthorAvatar).includes(DEFAULT_AVATAR)
   if (!hasAuthor) {
     skippedNoAuthor++
+    continue
+  }
+
+  if (!isZhihuUrl(it.Url ?? '')) {
+    skippedOffsite++
     continue
   }
 
@@ -87,5 +102,6 @@ await writeFile(outFile, JSON.stringify(cards, null, 2) + '\n')
 
 console.log(`read    ${items.length} raw items from ${files.length} files`)
 console.log(`skipped ${skippedNoAuthor} with no author`)
+console.log(`skipped ${skippedOffsite} off zhihu.com`)
 console.log(`wrote   ${cards.length} cards to content/pool.json`)
 console.log(`pending ${cards.length} cards still need domain + reason`)
