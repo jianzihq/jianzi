@@ -119,3 +119,11 @@
 .remove:hover {
   color: var(--registration);
 }
+
+/* Phones. The reader's card stands over the top of the screen, so the masthead starts below it,
+   and the sides only need to clear the edge tabs. */
+@media (max-width: 560px) {
+  .list {
+    padding: 156px 52px 120px;
+  }
+}

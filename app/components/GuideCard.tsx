@@ -14,12 +14,12 @@ import card from './Card.module.css'
 /**
  * How wide a plate is drawn, so the browser fetches a cut that fits instead of assuming
  * the whole viewport. The front sits in the card's text column, 356px at the largest card
- * scale of 1.2. The back sits in the column sheet: min(640px, 100vw - 48px) less 92px of
- * padding.
+ * scale of 1.2. The back sits in the column sheet: min(640px, 100vw - 48px) less its side
+ * padding, 92px, or 44px on a phone.
  */
 const PLATE_SIZES = {
   front: '428px',
-  back: '(max-width: 688px) calc(100vw - 140px), 548px',
+  back: '(max-width: 560px) calc(100vw - 92px), (max-width: 688px) calc(100vw - 140px), 548px',
 } as const
 
 export function GuideCopy({

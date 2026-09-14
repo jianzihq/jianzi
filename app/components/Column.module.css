@@ -273,3 +273,11 @@
 .onward:hover {
   color: var(--registration);
 }
+
+/* Phones. The sheet is the screen less 48px, so its margins hand most of that back to the text.
+   The foot still clears the deepest point of the tear. */
+@media (max-width: 560px) {
+  .ink {
+    padding: 30px 22px 68px;
+  }
+}

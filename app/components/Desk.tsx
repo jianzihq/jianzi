@@ -836,8 +836,9 @@ export function Desk({ cards }: { cards: CardData[] }) {
         }}
         style={
           {
-            // The list lays cards out at their design size with all of their text.
-            '--card-scale': listOpen ? 1 : layout.cardScale,
+            // The list lays cards out at their design size with all of their text. A narrow
+            // screen scales either down further: --fit in Desk.module.css.
+            '--view-scale': listOpen ? 1 : layout.cardScale,
             '--reveal-floor': listOpen ? 1 : layout.revealFloor,
           } as React.CSSProperties
         }

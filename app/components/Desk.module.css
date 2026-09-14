@@ -6,11 +6,39 @@
   touch-action: none;
   /* The ground is painted on body so both views share one desk. */
 
-  /* Card size is redeclared here, off this view's own --card-scale. A var() inside a custom
-     property is resolved on the element that declares it, so a size declared on :root keeps
-     :root's scale whatever a view sets underneath. */
+  /* The view sets --view-scale, and a narrow screen shrinks it by --fit so the card in the
+     middle clears the tabs standing on both edges. Card size is redeclared here, off this
+     element's own --card-scale. A var() inside a custom property is resolved on the element
+     that declares it, so a size declared on :root keeps :root's scale whatever a view sets
+     underneath. */
+  --card-scale: calc(var(--view-scale, 1) * var(--fit, 1));
   --card-w: calc(400px * var(--card-scale));
   --card-h: calc(500px * var(--card-scale));
+}
+
+/* Phones. The compact card is 480px wide at full size; each step keeps it at least 36px clear
+   of both screen edges, where the kraft tabs stand. */
+@media (max-width: 560px) {
+  .viewport {
+    --fit: 0.74;
+  }
+
+  /* Keyboard and mouse hints mean nothing under a thumb, and here they wrap into the card. */
+  .viewport .hud {
+    display: none;
+  }
+}
+
+@media (max-width: 430px) {
+  .viewport {
+    --fit: 0.66;
+  }
+}
+
+@media (max-width: 388px) {
+  .viewport {
+    --fit: 0.6;
+  }
 }
 
 .viewport:active {
