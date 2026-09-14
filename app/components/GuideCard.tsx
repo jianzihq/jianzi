@@ -11,6 +11,17 @@ import {
 } from '@/lib/guide'
 import card from './Card.module.css'
 
+/**
+ * How wide a plate is drawn, so the browser fetches a cut that fits instead of assuming
+ * the whole viewport. The front sits in the card's text column, 356px at the largest card
+ * scale of 1.2. The back sits in the column sheet: min(640px, 100vw - 48px) less 92px of
+ * padding.
+ */
+const PLATE_SIZES = {
+  front: '428px',
+  back: '(max-width: 688px) calc(100vw - 140px), 548px',
+} as const
+
 export function GuideCopy({
   face,
   figureClassName,
@@ -19,22 +30,24 @@ export function GuideCopy({
   figureClassName: string
 }) {
   return GUIDE_BLOCKS.filter((block) => block.face === face).map((block, i) => (
-    <GuidePiece key={i} block={block} figureClassName={figureClassName} />
+    <GuidePiece key={i} block={block} figureClassName={figureClassName} sizes={PLATE_SIZES[face]} />
   ))
 }
 
 function GuidePiece({
   block,
   figureClassName,
+  sizes,
 }: {
   block: GuideBlock
   figureClassName: string
+  sizes: string
 }) {
   if (block.type === 'text') return <p>{block.text}</p>
   if (block.type === 'heading') return <h3>{block.text}</h3>
   return (
     <figure className={figureClassName}>
-      <img src={block.src} alt={block.alt} />
+      <Image src={block.src} alt={block.alt} width={block.width} height={block.height} sizes={sizes} />
     </figure>
   )
 }

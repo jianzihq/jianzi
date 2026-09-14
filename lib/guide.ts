@@ -24,16 +24,20 @@ export const GUIDE_TITLE = '这张桌子怎么用'
 export type GuideBlock =
   | { type: 'text'; face: 'front' | 'back'; text: string }
   | { type: 'heading'; face: 'back'; text: string }
-  | { type: 'figure'; face: 'front' | 'back'; src: string; alt: string }
+  | { type: 'figure'; face: 'front' | 'back'; src: string; alt: string; width: number; height: number }
 
-const MOVE = { src: '/guide/move.webp', alt: 'WASD 与方向键，把下一张送到眼前' }
-const POINTER = { src: '/guide/pointer.webp', alt: '触控板两指，滚轮、Shift 滚轮与中键' }
-const OPEN = { src: '/guide/open.webp', alt: '点卡或按 Enter，纸会翻开' }
+/** Plates are cut at 720 wide: 2:1 for the short ones, 3:2 for the rest. Keep in step with public/guide. */
+const WIDE = { width: 720, height: 360 }
+const TALL = { width: 720, height: 480 }
+
+const MOVE = { src: '/guide/move.webp', alt: 'WASD 与方向键，把下一张送到眼前', ...WIDE }
+const POINTER = { src: '/guide/pointer.webp', alt: '触控板两指，滚轮、Shift 滚轮与中键', ...WIDE }
+const OPEN = { src: '/guide/open.webp', alt: '点卡或按 Enter，纸会翻开', ...TALL }
 /** The front's own plate: wide and short, and only the one act of opening. */
-const OPEN_FRONT = { src: '/guide/open-front.webp', alt: '光标点在纸角，Enter 指向同一处，纸角翻起' }
-const REACT = { src: '/guide/react.webp', alt: '右键便签上的喜欢与不喜欢，专栏纸边的红、墨两条丝带' }
-const FILE = { src: '/guide/file.webp', alt: '把左边的标签拖到卡上，或按 1 2 3' }
-const VIEWS = { src: '/guide/views.webp', alt: '右边三个标签，或按 8 9 0' }
+const OPEN_FRONT = { src: '/guide/open-front.webp', alt: '光标点在纸角，Enter 指向同一处，纸角翻起', ...WIDE }
+const REACT = { src: '/guide/react.webp', alt: '右键便签上的喜欢与不喜欢，专栏纸边的红、墨两条丝带', ...TALL }
+const FILE = { src: '/guide/file.webp', alt: '把左边的标签拖到卡上，或按 1 2 3', ...TALL }
+const VIEWS = { src: '/guide/views.webp', alt: '右边三个标签，或按 8 9 0', ...TALL }
 
 export const GUIDE_BLOCKS: GuideBlock[] = [
   { type: 'text', face: 'front', text: '每张纸都能翻过来，点这张试试。' },
