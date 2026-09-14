@@ -21,7 +21,9 @@
 .slot {
   position: absolute;
   /* Cards are placed by their centre, so the card's own size does not shift the slot. */
-  transform: translate(-50%, -50%) scale(var(--depth));
+  /* Centred on the slot, then pushed outward in screen space — see pushAt in lib/desk.ts. */
+  transform: translate(calc(-50% + var(--push-x, 0px)), calc(-50% + var(--push-y, 0px)))
+    scale(var(--depth));
   transform-origin: 50% 50%;
   opacity: var(--dim);
   /* Promote each slot so the deckle filter is rasterised once and the per-frame scale

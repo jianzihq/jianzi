@@ -13,7 +13,7 @@
      not declare it: a declaration on the element outranks the inherited value, and every
      card would believe it sits in the middle. Where nothing writes it — the list view —
      its registered initial value of 1 leaves the card fully present. */
-  --reveal-floor: 0.35;
+  --reveal-floor: 0.26;
   --reveal: calc(
     var(--reveal-floor) + (1 - var(--reveal-floor)) *
       clamp(0, calc((var(--focus) - 0.5) * 2.6), 1)

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useGesture } from '@use-gesture/react'
 import type { Card as CardData } from '@/lib/types'
-import { slotsInView, focusAt, slotCentre, cellAt, type Slot } from '@/lib/desk'
+import { slotsInView, focusAt, pushAt, slotCentre, cellAt, type Slot } from '@/lib/desk'
 import { paperOffset, paperTilt } from '@/lib/paper'
 import { domainInk } from '@/lib/domains'
 import { Card } from './Card'
@@ -50,6 +50,7 @@ type Opened = {
   /** Desk position of the slot, to find the card on screen again when putting it back. */
   x: number
   y: number
+  drift: number
   /** The clipping's own height, so the closed pose is the card's real size. */
   height: number
 }
@@ -67,7 +68,9 @@ export function Desk({ cards }: { cards: CardData[] }) {
   const size = useRef<Vec>({ x: 1440, y: 900 })
 
   /** Live handles for the slots on screen, so focus is written without a re-render. */
-  const nodes = useRef(new Map<string, { el: HTMLDivElement; x: number; y: number }>())
+  const nodes = useRef(
+    new Map<string, { el: HTMLDivElement; x: number; y: number; drift: number }>(),
+  )
   /** Set when the desk must redraw even though the camera has not moved. */
   const dirty = useRef(true)
 
@@ -99,7 +102,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
   const isOpen = useRef(false)
 
   const registerSlot = useCallback((slot: Slot) => (el: HTMLDivElement | null) => {
-    if (el) nodes.current.set(slot.key, { el, x: slot.x, y: slot.y })
+    if (el) nodes.current.set(slot.key, { el, x: slot.x, y: slot.y, drift: slot.drift })
     else nodes.current.delete(slot.key)
     dirty.current = true
   }, [])
@@ -226,8 +229,11 @@ export function Desk({ cards }: { cards: CardData[] }) {
       // cost more than the illusion is worth — see PRODUCT section 8.
       const midX = c.x + size.current.x / 2
       const midY = c.y + size.current.y / 2
-      for (const { el, x, y } of nodes.current.values()) {
+      for (const { el, x, y, drift } of nodes.current.values()) {
         const f = focusAt(x - midX, y - midY)
+        const [px, py] = pushAt(x - midX, y - midY, drift)
+        el.style.setProperty('--push-x', `${px.toFixed(1)}px`)
+        el.style.setProperty('--push-y', `${py.toFixed(1)}px`)
         el.style.setProperty('--focus', f.toFixed(3))
         el.style.setProperty('--depth', depthAt(f).toFixed(3))
         el.style.setProperty('--dim', dimAt(f).toFixed(3))
@@ -253,12 +259,14 @@ export function Desk({ cards }: { cards: CardData[] }) {
   }, [cards.length])
 
   /** Where the card at a desk position is on screen right now, drawn as the desk draws it. */
-  const poseOf = useCallback((x: number, y: number): Pose => {
+  const poseOf = useCallback((x: number, y: number, drift: number): Pose => {
     const c = current.current
     const dx = x - (c.x + size.current.x / 2)
     const dy = y - (c.y + size.current.y / 2)
     const f = focusAt(dx, dy)
-    return { x: dx, y: dy, s: depthAt(f), o: dimAt(f), f }
+    // The card is drawn pushed outward, so that is where it has to be picked up from.
+    const [px, py] = pushAt(dx, dy, drift)
+    return { x: dx + px, y: dy + py, s: depthAt(f), o: dimAt(f), f }
   }, [])
 
   /** The sheet's length, and how much of it to show while it turns. */
@@ -286,7 +294,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
   const turnBack = useCallback(
     (g: number) => {
       const o = openedRef.current
-      if (o) setFrom(poseOf(o.x, o.y))
+      if (o) setFrom(poseOf(o.x, o.y, o.drift))
       setPhase('returning')
       window.setTimeout(() => finishReturn(g), TURN_MS + GRACE_MS)
     },
@@ -327,12 +335,13 @@ export function Desk({ cards }: { cards: CardData[] }) {
         index: slot.index,
         x: slot.x,
         y: slot.y,
+        drift: slot.drift,
         height: card instanceof HTMLElement ? card.offsetHeight : 520,
       }
       openedRef.current = next
       // Picked up from exactly where it lies, at the scale and dimming the desk is drawing it
       // with, so there is never a second copy of the card in a second place.
-      setFrom(poseOf(slot.x, slot.y))
+      setFrom(poseOf(slot.x, slot.y, slot.drift))
       setOpened(next)
       setPhase('enter')
 

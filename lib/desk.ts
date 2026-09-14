@@ -18,6 +18,8 @@ export type Slot = {
   y: number
   /** Index into the ordered deck. */
   index: number
+  /** How strongly this slot takes the outward push, 0.55–1.45. Fixed per cell. */
+  drift: number
 }
 
 const hash2 = (i: number, j: number): number => {
@@ -84,7 +86,8 @@ export function slotsInView(
   for (let j = j0; j <= j1; j++) {
     for (let i = i0; i <= i1; i++) {
       const { x, y } = slotCentre(i, j)
-      slots.push({ key: `${i},${j}`, x, y, index: deckIndex(i, j, deckLen) })
+      const drift = 0.55 + ((hash2(i, j) >> 16) % 91) / 100
+      slots.push({ key: `${i},${j}`, x, y, index: deckIndex(i, j, deckLen), drift })
     }
   }
   return slots
@@ -94,4 +97,29 @@ export function slotsInView(
 export function focusAt(dx: number, dy: number, reach = 620): number {
   const d = Math.hypot(dx, dy * 0.8)
   return Math.max(0, Math.min(1, 1 - d / reach))
+}
+
+/** Where the outward push starts, where it reaches full strength, and how strong that is. */
+const PUSH_FROM = 700
+const PUSH_TO = 1300
+const PUSH = 90
+
+/**
+ * Screen-space outward push for a slot at (dx, dy) from the middle of the screen.
+ *
+ * The ring around the centre card stays where the grid puts it. From the second ring out,
+ * cards are pushed away from the middle — further than the first ring, and by a different
+ * amount each — which opens the spacing out there and breaks up rows and columns that
+ * would otherwise line up. A grid alone cannot do this: one step of panning turns the
+ * second ring into the first, so the spacing has to follow the screen, not the desk.
+ *
+ * Radial only. A sideways offset would change direction as the desk pans, and the cards
+ * would appear to swim rather than to sit at different depths.
+ */
+export function pushAt(dx: number, dy: number, drift: number): [number, number] {
+  const r = Math.hypot(dx, dy)
+  if (r < 1) return [0, 0]
+  const t = Math.max(0, Math.min(1, (r - PUSH_FROM) / (PUSH_TO - PUSH_FROM)))
+  const amount = PUSH * drift * t * t * (3 - 2 * t)
+  return [(dx / r) * amount, (dy / r) * amount]
 }
