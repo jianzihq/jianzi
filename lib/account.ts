@@ -59,6 +59,41 @@ function show(next: Exclude<AccountNotice, null>): void {
   noticeTimer = window.setTimeout(dismissNotice, NOTICE_MS)
 }
 
+// ---- the login offer ----
+
+const OFFER_KEY = 'jianzi:login-offer:v1'
+const OFFER_MS = 15000
+let offer = false
+let offerTimer = 0
+
+export const readOffer = (): boolean => offer
+export const serverOffer = (): boolean => false
+
+export function dismissOffer(): void {
+  window.clearTimeout(offerTimer)
+  if (!offer) return
+  offer = false
+  emit()
+}
+
+/**
+ * A signed-out reader has just filed a card. The first time this browser sees that, offer the
+ * login: keeping favourites on an account is worth something right now. Once per browser; with
+ * no storage to remember that in, it stays quiet rather than repeat itself.
+ */
+export function offerLoginAfterFiling(): void {
+  if (account.status !== 'anonymous' || offer) return
+  try {
+    if (window.localStorage.getItem(OFFER_KEY) === '1') return
+    window.localStorage.setItem(OFFER_KEY, '1')
+  } catch {
+    return
+  }
+  offer = true
+  emit()
+  offerTimer = window.setTimeout(dismissOffer, OFFER_MS)
+}
+
 const text = (value: unknown): string => (typeof value === 'string' ? value : '')
 
 /** /api/me is our own route, but its answer is still read defensively. */

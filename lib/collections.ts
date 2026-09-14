@@ -194,25 +194,30 @@ export function disconnectCollections(): void {
   store(emptyCollections())
 }
 
-function edit(next: Collections, method: 'PUT' | 'DELETE', tag: TagId, cardId: string): void {
-  if (next === readCollections()) return
+/** Apply an edit here and send it on. False when it changed nothing. */
+function edit(next: Collections, method: 'PUT' | 'DELETE', tag: TagId, cardId: string): boolean {
+  if (next === readCollections()) return false
   edits += 1
   store(next)
   const me = following
   if (!me) {
     storage.set(UNSYNCED_KEY, '1')
-    return
+    return true
   }
   void send(method, `/api/collections/${tag}/${encodeURIComponent(cardId)}`).then((account) => {
     if (account || following !== me) return
     storage.set(UNSYNCED_KEY, '1')
     me.trouble()
   })
+  return true
 }
 
-/** File a card under a tag: here at once, and on the account behind it when signed in. */
-export const fileCard = (tag: TagId, cardId: string): void =>
+/**
+ * File a card under a tag: here at once, and on the account behind it when signed in. False
+ * when it was already filed there.
+ */
+export const fileCard = (tag: TagId, cardId: string): boolean =>
   edit(withCard(readCollections(), tag, cardId), 'PUT', tag, cardId)
 
-export const unfileCard = (tag: TagId, cardId: string): void =>
+export const unfileCard = (tag: TagId, cardId: string): boolean =>
   edit(withoutCard(readCollections(), tag, cardId), 'DELETE', tag, cardId)

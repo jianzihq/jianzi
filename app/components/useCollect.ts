@@ -13,6 +13,7 @@ import {
   unfileCard,
   type TagId,
 } from '@/lib/collections'
+import { offerLoginAfterFiling } from '@/lib/account'
 
 /** How long a card is held still before it lifts off to be filed. */
 const LIFT_MS = 320
@@ -61,8 +62,13 @@ export function useCollect(cards: CardData[], { blocked, onTagClick }: Options) 
   const stored = useSyncExternalStore(subscribeCollections, readCollections, serverCollections)
   const collections = useMemo(() => narrowTo(stored, known), [stored, known])
 
-  const add = useCallback((tag: TagId, id: string) => fileCard(tag, id), [])
-  const remove = useCallback((tag: TagId, id: string) => unfileCard(tag, id), [])
+  // Filing a card is the moment a login is worth offering; see offerLoginAfterFiling.
+  const add = useCallback((tag: TagId, id: string) => {
+    if (fileCard(tag, id)) offerLoginAfterFiling()
+  }, [])
+  const remove = useCallback((tag: TagId, id: string) => {
+    unfileCard(tag, id)
+  }, [])
 
   const ghost = useRef<HTMLDivElement>(null)
   /** A card is off the desk and following the pointer; the desk must not pan meanwhile. */

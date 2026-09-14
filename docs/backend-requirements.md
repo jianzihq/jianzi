@@ -161,7 +161,7 @@ Authorization: Bearer {access_token}
 - 登录入口和头像的显示；未登录时网站照常可用
 - URL 带 `?login=failed` 时，提示「登录没有成功，可以再试一次」
 
-**已实现**（`feat/login-entry`）：顶边纸签 `app/components/AccountTab.tsx`，登录状态在 `lib/account.ts`。
+**已实现**：右上角读者证 `app/components/ReaderCard.tsx`，未登录读者第一次收藏时在左栏旁提示登录（`LoginOffer`）；登录状态在 `lib/account.ts`。
 
 ### 4.5 验收
 
