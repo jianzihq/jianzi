@@ -1,0 +1,13 @@
+/* The empty desk: one notice, alone in the middle of the ground. DESIGN.md section 8. */
+.empty {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  --card-scale: 1;
+  --card-w: min(400px, calc(100vw - 48px));
+  /* A notice is a few lines. The card's usual floor is sized for an answer and would leave
+     dead paper under them. */
+  --card-h: 0px;
+}
