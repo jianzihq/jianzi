@@ -3,15 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 import type { Card as CardData } from '@/lib/types'
 import {
+  fileCard,
   isTagId,
   narrowTo,
   readCollections,
   serverCollections,
   subscribeCollections,
   tagLabel,
-  withCard,
-  withoutCard,
-  writeCollections,
+  unfileCard,
   type TagId,
 } from '@/lib/collections'
 
@@ -62,14 +61,8 @@ export function useCollect(cards: CardData[], { blocked, onTagClick }: Options) 
   const stored = useSyncExternalStore(subscribeCollections, readCollections, serverCollections)
   const collections = useMemo(() => narrowTo(stored, known), [stored, known])
 
-  const add = useCallback(
-    (tag: TagId, id: string) => writeCollections(withCard(readCollections(), tag, id)),
-    [],
-  )
-  const remove = useCallback(
-    (tag: TagId, id: string) => writeCollections(withoutCard(readCollections(), tag, id)),
-    [],
-  )
+  const add = useCallback((tag: TagId, id: string) => fileCard(tag, id), [])
+  const remove = useCallback((tag: TagId, id: string) => unfileCard(tag, id), [])
 
   const ghost = useRef<HTMLDivElement>(null)
   /** A card is off the desk and following the pointer; the desk must not pan meanwhile. */

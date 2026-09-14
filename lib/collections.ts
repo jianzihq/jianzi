@@ -1,10 +1,10 @@
 /**
- * Favourite tags: the data, the edits, and the browser store behind them. No React.
+ * Favourite tags: the data, the edits, and where they are kept. No React.
  *
- * Collections live in this browser for now. Keeping them on the reader's Zhihu account
- * needs OAuth and server storage, which the backend owns — see
- * docs/backend-requirements.md. When that lands only the store at the bottom of this file
- * changes; everything that reads or edits a collection goes through the functions above it.
+ * Signed out, collections live in this browser. Signed in, they live on the reader's Zhihu
+ * account (app/api/collections) and this browser keeps a mirror, so the shelf never waits on
+ * the network: an edit lands here at once and is sent on behind it. If a send fails the edit
+ * stays here, marked unsynced, and goes up with the next merge.
  */
 
 export const TAGS = [
@@ -47,33 +47,66 @@ export function narrowTo(c: Collections, known: ReadonlySet<string>): Collection
   return dropped ? out : c
 }
 
-// ---- browser store, shaped for useSyncExternalStore ----
+// ---- where collections are kept, shaped for useSyncExternalStore ----
 
 const STORAGE_KEY = 'jianzi:collections:v1'
+/** Set while this browser holds an edit its account has not received. */
+const UNSYNCED_KEY = 'jianzi:collections:unsynced'
+/** Set once this browser's collections have been merged into that account. */
+const syncedKey = (userId: string): string => `jianzi:collections:synced:${userId}`
+
 /** Stable, as the server snapshot must be: the server has no storage, so nothing is kept. */
 const SERVER_SNAPSHOT: Collections = emptyCollections()
 const listeners = new Set<() => void>()
 let cache: Collections | null = null
 
-/**
- * What this browser has kept. Storage is untrusted: it may be missing, blocked, or written
- * by an older version, and each of those reads as nothing kept rather than as an error.
- */
-function load(): Collections {
-  const out = emptyCollections()
-  try {
-    const parsed: unknown = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? 'null')
-    if (!parsed || typeof parsed !== 'object') return out
-    for (const { id } of TAGS) {
-      const list = (parsed as Record<string, unknown>)[id]
-      if (Array.isArray(list)) {
-        out[id] = [...new Set(list.filter((v): v is string => typeof v === 'string'))]
-      }
+/** localStorage, which may be missing or blocked. Blocked, collections last for this visit. */
+const storage = {
+  get(key: string): string | null {
+    try {
+      return window.localStorage.getItem(key)
+    } catch {
+      return null
     }
-  } catch {
-    // Unreadable storage: start empty.
+  },
+  set(key: string, value: string): void {
+    try {
+      window.localStorage.setItem(key, value)
+    } catch {
+      // Blocked storage: kept for this visit only.
+    }
+  },
+  remove(key: string): void {
+    try {
+      window.localStorage.removeItem(key)
+    } catch {
+      // Nothing to remove from.
+    }
+  },
+}
+
+/**
+ * Collections from anywhere untrusted: storage an older version wrote, or the network.
+ * Anything malformed reads as nothing kept rather than as an error.
+ */
+function parse(raw: unknown): Collections {
+  const out = emptyCollections()
+  if (!raw || typeof raw !== 'object') return out
+  for (const { id } of TAGS) {
+    const list = (raw as Record<string, unknown>)[id]
+    if (Array.isArray(list)) {
+      out[id] = [...new Set(list.filter((v): v is string => typeof v === 'string'))]
+    }
   }
   return out
+}
+
+function load(): Collections {
+  try {
+    return parse(JSON.parse(storage.get(STORAGE_KEY) ?? 'null'))
+  } catch {
+    return emptyCollections()
+  }
 }
 
 /** The current collections — the same object until they change. */
@@ -91,13 +124,95 @@ export function subscribeCollections(listener: () => void): () => void {
   }
 }
 
-export function writeCollections(next: Collections): void {
+/** Keep collections in this browser and tell whoever is showing them. */
+function store(next: Collections): void {
   if (next === cache) return
   cache = next
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-  } catch {
-    // Blocked storage: filing still works for this visit, it just will not survive a reload.
-  }
+  storage.set(STORAGE_KEY, JSON.stringify(next))
   listeners.forEach((listener) => listener())
 }
+
+// ---- following the reader's account ----
+
+type Following = { userId: string; trouble: () => void }
+let following: Following | null = null
+/** Counts edits, so an answer that set out before one never overwrites it. */
+let edits = 0
+
+async function send(
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  path: string,
+  body?: Collections,
+): Promise<Collections | null> {
+  try {
+    const res = await fetch(path, {
+      method,
+      cache: 'no-store',
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    })
+    return res.ok ? parse(await res.json()) : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Follow a signed-in account. The first time this browser meets it, or while an edit made
+ * here has not reached it, what this browser holds is merged into the account; otherwise the
+ * account's copy replaces the mirror. `trouble` hears when the account cannot be reached.
+ */
+export function connectCollections(userId: string, trouble: () => void): void {
+  const me: Following = { userId, trouble }
+  following = me
+  const editsBefore = edits
+  const merge = storage.get(syncedKey(userId)) !== '1' || storage.get(UNSYNCED_KEY) === '1'
+  const request = merge
+    ? send('POST', '/api/collections/merge', readCollections())
+    : send('GET', '/api/collections')
+  void request.then((account) => {
+    if (following !== me) return
+    if (!account) {
+      trouble()
+      return
+    }
+    storage.set(syncedKey(userId), '1')
+    if (edits !== editsBefore) {
+      // The reader filed something while this was on its way: keep it, merge next visit.
+      storage.set(UNSYNCED_KEY, '1')
+      return
+    }
+    storage.remove(UNSYNCED_KEY)
+    store(account)
+  })
+}
+
+/** Stop following. The mirror belonged to that account, so this browser starts empty again. */
+export function disconnectCollections(): void {
+  following = null
+  storage.remove(UNSYNCED_KEY)
+  store(emptyCollections())
+}
+
+function edit(next: Collections, method: 'PUT' | 'DELETE', tag: TagId, cardId: string): void {
+  if (next === readCollections()) return
+  edits += 1
+  store(next)
+  const me = following
+  if (!me) {
+    storage.set(UNSYNCED_KEY, '1')
+    return
+  }
+  void send(method, `/api/collections/${tag}/${encodeURIComponent(cardId)}`).then((account) => {
+    if (account || following !== me) return
+    storage.set(UNSYNCED_KEY, '1')
+    me.trouble()
+  })
+}
+
+/** File a card under a tag: here at once, and on the account behind it when signed in. */
+export const fileCard = (tag: TagId, cardId: string): void =>
+  edit(withCard(readCollections(), tag, cardId), 'PUT', tag, cardId)
+
+export const unfileCard = (tag: TagId, cardId: string): void =>
+  edit(withoutCard(readCollections(), tag, cardId), 'DELETE', tag, cardId)

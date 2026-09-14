@@ -29,6 +29,7 @@ import {
 import { GUIDE_ID, guideCard, readGuideSeen, rememberGuide, serverGuideSeen, subscribeGuide } from '@/lib/guide'
 import { paperOffset, paperTilt, ribbonPose } from '@/lib/paper'
 import { domainInk } from '@/lib/domains'
+import { AccountTab } from './AccountTab'
 import { Card } from './Card'
 import { Column } from './Column'
 import { GuideCard } from './GuideCard'
@@ -934,6 +935,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
         onPress={pressTag}
         onKeyOpen={showTag}
       />
+      <AccountTab hidden={active} />
       <DragGhost ref={ghost} />
       {menu && (
         <ReactionMenu
