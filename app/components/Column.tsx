@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import type { Card as CardData } from '@/lib/types'
+import { tearClip } from '@/lib/paper'
 import styles from './Column.module.css'
 
 /**
@@ -12,7 +13,7 @@ import styles from './Column.module.css'
 export function Column({ card }: { card: CardData }) {
   return (
     <div className={styles.column}>
-      <div className={styles.sheet} />
+      <div className={styles.sheet} style={{ '--tear-clip': tearClip(card.id) } as React.CSSProperties} />
       <div className={styles.ink}>
       <div className={styles.masthead}>
         <span className={styles.source}>
@@ -56,13 +57,12 @@ export function Column({ card }: { card: CardData }) {
 
       </div>
 
-      <div className={styles.foot}>
-        <div className={styles.tear} />
-        <div className={styles.onwardSlip}>
-          <a className={styles.onward} href={card.url} target="_blank" rel="noopener noreferrer">
-            余下的在知乎 →
-          </a>
-        </div>
+      {/* Tucked under the torn foot, most of it showing past the ragged edge. It is a
+          separate piece of paper, which is what lets it outlive the sheet. */}
+      <div className={styles.onwardSlip}>
+        <a className={styles.onward} href={card.url} target="_blank" rel="noopener noreferrer">
+          余下的在知乎 →
+        </a>
       </div>
     </div>
   )

@@ -79,6 +79,9 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
+  /* Keeps the pointer, because a wheel event has to hit-test this element to scroll it.
+     The stage covers the whole screen and sits above the backdrop, so it has to decide
+     for itself whether a click landed on paper or on desk — see the handler. */
   pointer-events: auto;
 }
 
@@ -116,15 +119,15 @@
 }
 
 /* Once the turn is done the sheet takes its real length and runs off the bottom of the
-   screen. Height is the only thing that changes, and the top edge does not move, so the
-   handover is invisible. */
+   screen. Height is the only thing that changes and the top edge stays put, so the
+   handover is invisible.
+
+   height stays a length rather than auto. auto cannot be interpolated, so leaving
+   reading mode would snap the sheet back to one screenful in a single frame instead of
+   folding it. The measured length is written in by the component. */
 .flipper[data-reading='true'] {
-  height: auto;
+  height: var(--read-h);
   margin-bottom: 14vh;
-  transition:
-    transform 720ms cubic-bezier(0.32, 0.72, 0.2, 1),
-    width 720ms cubic-bezier(0.32, 0.72, 0.2, 1),
-    margin-top 720ms cubic-bezier(0.32, 0.72, 0.2, 1);
 }
 
 .face {

@@ -34,26 +34,6 @@ export function DeckleDefs() {
             />
           </filter>
         ))}
-
-        {/* The torn foot of the column. Longer fibres and a much bigger excursion than
-            a deckle: a cut edge wavers, a torn one lurches, and the difference is the
-            whole point — the card was cut out by us, the text ran out on its own. */}
-        <filter id="torn" x="-4%" y="-90%" width="108%" height="280%">
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.03 0.012"
-            numOctaves={4}
-            seed={91}
-            result="fibre"
-          />
-          <feDisplacementMap
-            in="SourceGraphic"
-            in2="fibre"
-            scale={17}
-            xChannelSelector="R"
-            yChannelSelector="G"
-          />
-        </filter>
       </defs>
     </svg>
   )

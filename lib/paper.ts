@@ -71,3 +71,26 @@ export function slipPose(id: string): {
     clip: 18 + ((h >> 22) % 52),
   }
 }
+
+/**
+ * The ragged foot of a column, as a clip path.
+ *
+ * A clip beats a displacement filter here because a filter chews every edge it is given,
+ * including the top one, so a torn strip never meets the paper above it. This leaves the
+ * top and sides straight and tears only the bottom.
+ *
+ * The height walks rather than jumping, because a tear propagates along the fibres — it
+ * wanders, where independent samples would come out as a sawtooth.
+ */
+export function tearClip(id: string): string {
+  const N = 24
+  const pts = ['0 0', '100% 0']
+  let h = hash(id + 'tear')
+  let y = 14
+  for (let k = 0; k <= N; k++) {
+    h = (Math.imul(h, 1103515245) + 12345) >>> 0
+    y = Math.max(3, Math.min(27, y + ((h % 13) - 6)))
+    pts.push(`${((100 * (N - k)) / N).toFixed(2)}% calc(100% - ${y}px)`)
+  }
+  return `polygon(${pts.join(', ')})`
+}

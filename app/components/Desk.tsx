@@ -39,6 +39,11 @@ export function Desk({ cards }: { cards: CardData[] }) {
   const [turned, setTurned] = useState(false)
   /** Set once the turn has finished, which is when the sheet may take its real length. */
   const [reading, setReading] = useState(false)
+  /* The sheet's real length, measured rather than guessed, so height can be animated
+     as a length in both directions. */
+  const [readHeight, setReadHeight] = useState(0)
+  const stage = useRef<HTMLDivElement>(null)
+  const back = useRef<HTMLDivElement>(null)
   /** A drag that travelled is not a click, however it ends. */
   const moved = useRef(false)
 
@@ -187,11 +192,20 @@ export function Desk({ cards }: { cards: CardData[] }) {
       height: card instanceof HTMLElement ? card.offsetHeight : 520,
     })
     requestAnimationFrame(() => setTurned(true))
-    window.setTimeout(() => setReading(true), 760)
+    window.setTimeout(() => {
+      // scrollHeight reports the content height even while the face is clipped, so the
+      // sheet is measured without ever being shown at full length.
+      setReadHeight(back.current?.scrollHeight ?? 0)
+      setReading(true)
+    }, 760)
   }, [])
 
   const close = useCallback(() => {
     isOpen.current = false
+    // Rewind to the head of the sheet in the same frame the turn starts. Leaving the
+    // scroll where it was would shift the paper the moment the stage stops scrolling;
+    // doing it under cover of the turn is what keeps that from reading as a jolt.
+    if (stage.current) stage.current.scrollTop = 0
     // Back to a single screenful before the turn starts, or the sheet would be folding
     // several thousand pixels of paper through the air.
     setReading(false)
@@ -239,7 +253,17 @@ export function Desk({ cards }: { cards: CardData[] }) {
             onClick={close}
             aria-hidden="true"
           />
-          <div className={styles.stage} data-reading={reading}>
+          <div
+            ref={stage}
+            className={styles.stage}
+            data-reading={reading}
+            /* Clicks that land on the stage itself landed on desk, not on paper: the
+               sheet stops them before they get here. The backdrop cannot do this on its
+               own because the scrolling stage has to sit above it. */
+            onClick={(e) => {
+              if (e.target === e.currentTarget) close()
+            }}
+          >
             <div
               className={styles.flipper}
               data-open={turned}
@@ -251,13 +275,14 @@ export function Desk({ cards }: { cards: CardData[] }) {
                   '--stamp-ink': domainInk(openedCard.domain),
                   '--card-tilt': `${paperTilt(openedCard.id).toFixed(2)}deg`,
                   '--closed-h': `${opened?.height ?? 520}px`,
+                  '--read-h': `${readHeight}px`,
                 } as React.CSSProperties
               }
             >
               <div className={`${styles.face} ${styles.front}`}>
                 <Card card={openedCard} />
               </div>
-              <div className={`${styles.face} ${styles.back}`}>
+              <div ref={back} className={`${styles.face} ${styles.back}`}>
                 <Column card={openedCard} />
               </div>
             </div>

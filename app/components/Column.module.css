@@ -16,20 +16,26 @@
   top: 0;
   /* Stops where the tear starts: 26px of ragged edge plus the 86px of desk the note is
      tucked into. */
-  bottom: 112px;
-  z-index: 0;
+  bottom: 40px;
+  z-index: 1;
   background-color: var(--paper);
   background-image: url('/paper/card-1.webp');
   background-repeat: repeat;
   background-blend-mode: multiply;
   background-position: var(--paper-x) var(--paper-y);
-  box-shadow: 0 24px 60px -18px rgba(40, 33, 22, 0.5);
+  /* One sheet with a ragged foot, rather than a strip sitting below it. A strip has a
+     top edge of its own, and a displacement filter chews that edge too, so it never met
+     the paper above — the seam showed up as a second tear. */
+  clip-path: var(--tear-clip);
+  /* drop-shadow follows the clipped silhouette. box-shadow would outline the rectangle
+     the paper no longer has, and clip-path cuts it off in any case. */
+  filter: drop-shadow(0 18px 34px rgba(40, 33, 22, 0.44));
 }
 
 .ink {
   position: relative;
-  z-index: 1;
-  padding: 38px 46px 0;
+  z-index: 2;
+  padding: 38px 46px 78px;
 }
 
 .masthead {
@@ -171,37 +177,13 @@
   color: var(--ink-soft);
 }
 
-/* Where the platform stops giving us text. Not hidden — made into the edge. */
-.foot {
-  position: relative;
-  z-index: 1;
-  margin-top: 30px;
-  /* Room for the note tucked underneath. */
-  padding-bottom: 86px;
-}
-
-/* The last of the paper. Same stock and same grain as the sheet above, ripped across.
-   Nothing comes after it — torn paper with more paper below would say the opposite of
-   what the tear is for. */
-.tear {
-  position: relative;
-  z-index: 2;
-  height: 26px;
-  background-color: var(--paper);
-  background-image: url('/paper/card-1.webp');
-  background-repeat: repeat;
-  background-blend-mode: multiply;
-  background-position: var(--paper-x) var(--paper-y);
-  filter: url(#torn);
-}
-
 /* Slipped under the torn end, most of it showing below. It is a different piece of
    paper, so it is allowed to outlive the sheet. */
 .onwardSlip {
   position: absolute;
   left: 46px;
-  top: calc(100% - 78px);
-  z-index: 1;
+  top: calc(100% - 60px);
+  z-index: 0;
   padding: 13px 20px 14px;
   background: var(--slip);
   border: 1px solid var(--slip-edge);
