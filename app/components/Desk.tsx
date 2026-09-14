@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useGesture } from '@use-gesture/react'
 import type { Card as CardData } from '@/lib/types'
-import { slotsInView, focusAt, CELL_W, CELL_H, type Slot } from '@/lib/desk'
+import { slotsInView, focusAt, slotCentre, cellAt, type Slot } from '@/lib/desk'
 import { Card } from './Card'
 import styles from './Desk.module.css'
 
@@ -76,18 +76,34 @@ export function Desk({ cards }: { cards: CardData[] }) {
     measure()
     window.addEventListener('resize', measure)
 
+    const STEP: Record<string, [number, number]> = {
+      arrowleft: [-1, 0],
+      arrowright: [1, 0],
+      arrowup: [0, -1],
+      arrowdown: [0, 1],
+      a: [-1, 0],
+      d: [1, 0],
+      w: [0, -1],
+      s: [0, 1],
+    }
+
     const onKey = (e: KeyboardEvent) => {
-      const step: Record<string, [number, number]> = {
-        ArrowLeft: [-CELL_W, 0],
-        ArrowRight: [CELL_W, 0],
-        ArrowUp: [0, -CELL_H],
-        ArrowDown: [0, CELL_H],
-      }
-      const s = step[e.key]
-      if (!s) return
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      const el = e.target as HTMLElement | null
+      if (el?.isContentEditable || /^(input|textarea|select)$/i.test(el?.tagName ?? '')) return
+
+      const step = STEP[e.key.toLowerCase()]
+      if (!step) return
       e.preventDefault()
-      target.current.x += s[0]
-      target.current.y += s[1]
+
+      // Snap to the card itself, not one cell along from wherever the pointer stopped.
+      // Stepping by a cell width preserves whatever offset the drag left behind, which
+      // parks the reader in the gap between two cards and keeps them there.
+      const half = { x: size.current.x / 2, y: size.current.y / 2 }
+      const here = cellAt(target.current.x + half.x, target.current.y + half.y)
+      const next = slotCentre(here.i + step[0], here.j + step[1])
+      target.current.x = next.x - half.x
+      target.current.y = next.y - half.y
     }
     window.addEventListener('keydown', onKey)
 
@@ -146,7 +162,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
           </div>
         ))}
       </div>
-      <div className={styles.hud}>拖动 · 触控板两指 · 方向键</div>
+      <div className={styles.hud}>拖动 · 触控板两指 · 方向键 / WASD</div>
     </div>
   )
 }

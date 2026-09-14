@@ -42,6 +42,24 @@ const jitter = (i: number, j: number): [number, number] => {
 }
 
 /**
+ * Where cell (i, j) actually puts its card, jitter included.
+ *
+ * Both the renderer and the keyboard read positions from here. If the keys did their
+ * own cell arithmetic they would land on the bare grid and miss the card by whatever
+ * the jitter happened to be.
+ */
+export function slotCentre(i: number, j: number): { x: number; y: number } {
+  const [jx, jy] = jitter(i, j)
+  return { x: i * CELL_W + CELL_W / 2 + jx, y: j * CELL_H + CELL_H / 2 + jy }
+}
+
+/** Which cell a point in desk coordinates falls in. Jitter is far smaller than a cell,
+ *  so the bare grid decides this unambiguously. */
+export function cellAt(x: number, y: number): { i: number; j: number } {
+  return { i: Math.round(x / CELL_W - 0.5), j: Math.round(y / CELL_H - 0.5) }
+}
+
+/**
  * Every slot touching the viewport, plus a ring outside it so cards are already in the
  * DOM before they are needed.
  */
@@ -63,13 +81,8 @@ export function slotsInView(
   const slots: Slot[] = []
   for (let j = j0; j <= j1; j++) {
     for (let i = i0; i <= i1; i++) {
-      const [jx, jy] = jitter(i, j)
-      slots.push({
-        key: `${i},${j}`,
-        x: i * CELL_W + CELL_W / 2 + jx,
-        y: j * CELL_H + CELL_H / 2 + jy,
-        index: deckIndex(i, j, deckLen),
-      })
+      const { x, y } = slotCentre(i, j)
+      slots.push({ key: `${i},${j}`, x, y, index: deckIndex(i, j, deckLen) })
     }
   }
   return slots
