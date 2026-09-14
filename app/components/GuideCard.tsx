@@ -31,6 +31,7 @@ function GuidePiece({
   figureClassName: string
 }) {
   if (block.type === 'text') return <p>{block.text}</p>
+  if (block.type === 'heading') return <h3>{block.text}</h3>
   return (
     <figure className={figureClassName}>
       <img src={block.src} alt={block.alt} />

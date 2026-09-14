@@ -194,6 +194,18 @@
   margin: 22px 0 0;
 }
 
+/* A step heading in the guide: set like a small section head in the column, ruled above. */
+.body h3 {
+  margin: 34px 0 0;
+  padding-top: 14px;
+  font-family: var(--song);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  border-top: 1px solid var(--rule);
+}
+
 .figure img {
   display: block;
   width: 100%;

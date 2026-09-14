@@ -65,7 +65,8 @@ export function Column({ card }: { card: CardData }) {
           )}
         </div>
 
-        {card.reason && <p className={styles.pencil}>{card.reason}</p>}
+        {/* The guide's slip asks to be opened; once it is, saying so again would be wrong. */}
+        {card.reason && card.id !== GUIDE_ID && <p className={styles.pencil}>{card.reason}</p>}
 
         <div className={styles.body}>
           {card.id === GUIDE_ID ? (

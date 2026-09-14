@@ -14,34 +14,67 @@ export const GUIDE_ID = 'jianzi:guide'
 export const GUIDE_TITLE = '这张桌子怎么用'
 
 /**
- * The guide is a short clipping of sentences and printed plates, in order.
+ * The guide is a short clipping of sentences, step headings and printed plates, in order.
  * Figures stay out of the Zhihu excerpt and out of Markdown.
+ *
+ * The front has one job: say that a clipping opens, and how to find the next one. The back
+ * is the whole guide from the top, one heading, one sentence and a plate per step, so turning
+ * it over never hides what the front said.
  */
 export type GuideBlock =
   | { type: 'text'; face: 'front' | 'back'; text: string }
+  | { type: 'heading'; face: 'back'; text: string }
   | { type: 'figure'; face: 'front' | 'back'; src: string; alt: string }
 
+const MOVE = { src: '/guide/move.webp', alt: 'WASD 与方向键，把下一张送到眼前' }
+const POINTER = { src: '/guide/pointer.webp', alt: '触控板两指，滚轮、Shift 滚轮与中键' }
+const OPEN = { src: '/guide/open.webp', alt: '点卡或按 Enter，纸会翻开' }
+const FILE = { src: '/guide/file.webp', alt: '把左边的标签拖到卡上，或按 1 2 3' }
+const VIEWS = { src: '/guide/views.webp', alt: '右边三个标签，或按 8 9 0' }
+
 export const GUIDE_BLOCKS: GuideBlock[] = [
-  {
-    type: 'text',
-    face: 'front',
-    text: '桌子可以拖。方向键和 WASD 会把下一张送到眼前。',
-  },
-  { type: 'figure', face: 'front', src: '/guide/move.webp', alt: 'WASD 与方向键，移动桌子' },
-  {
-    type: 'text',
-    face: 'front',
-    text: '触控板两指，滚轮、Shift 滚轮、中键也能挪。',
-  },
-  { type: 'figure', face: 'front', src: '/guide/pointer.webp', alt: '触控板两指，滚轮与中键' },
+  { type: 'text', face: 'front', text: '每一张纸都能点开。先点这张，或者按 Enter。' },
+  { type: 'figure', face: 'front', ...OPEN },
+  { type: 'text', face: 'front', text: '看完放回去，拖动桌子找下一张。' },
+  { type: 'figure', face: 'front', ...MOVE },
+
+  { type: 'text', face: 'back', text: '这张桌子上只有几件事，从上往下看一遍就会用了。' },
+
+  { type: 'heading', face: 'back', text: '一　挪桌子' },
   {
     type: 'text',
     face: 'back',
-    text: '点开或按 Enter，纸会翻过来。背面是我们拿到的原文开头，撕开的地方去知乎。',
+    text: '拖动桌子，或者按方向键、WASD，下一张会送到眼前。触控板两指、滚轮、Shift 加滚轮、按住中键拖，也都能挪。',
   },
-  { type: 'figure', face: 'back', src: '/guide/open.webp', alt: '点卡或按 Enter，纸会翻开' },
-  { type: 'figure', face: 'back', src: '/guide/file.webp', alt: '把左边的标签拖到卡上，或按 1 2 3' },
-  { type: 'figure', face: 'back', src: '/guide/views.webp', alt: '右边三个标签，或按 8 9 0' },
+  { type: 'figure', face: 'back', ...MOVE },
+  { type: 'figure', face: 'back', ...POINTER },
+
+  { type: 'heading', face: 'back', text: '二　翻开' },
+  {
+    type: 'text',
+    face: 'back',
+    text: '点一下纸，或者按 Enter，它会翻过来。背面是我们拿到的原文开头，读到撕口，余下的去知乎。看完点四周或按 Esc，放回桌上。',
+  },
+  { type: 'figure', face: 'back', ...OPEN },
+
+  { type: 'heading', face: 'back', text: '三　收藏' },
+  {
+    type: 'text',
+    face: 'back',
+    text: '想留着，把左边的标签拖到卡上，或者按 1、2、3。点左边的标签，能看到收进去的卡。',
+  },
+  { type: 'figure', face: 'back', ...FILE },
+
+  { type: 'heading', face: 'back', text: '四　换个看法' },
+  { type: 'text', face: 'back', text: '右边三枚标签换排布：紧凑、宽松、列表，也可以按 8、9、0。' },
+  { type: 'figure', face: 'back', ...VIEWS },
+
+  { type: 'heading', face: 'back', text: '五　喜欢与不喜欢' },
+  {
+    type: 'text',
+    face: 'back',
+    text: '右键一张卡，或者翻开后点纸边的丝带，说喜欢还是不喜欢。我们会反过来用，多给你没碰过的领域。',
+  },
 ]
 
 export const GUIDE_BODY = GUIDE_BLOCKS.filter(
@@ -50,7 +83,8 @@ export const GUIDE_BODY = GUIDE_BLOCKS.filter(
   .map((block) => block.text)
   .join('\n')
 
-export const GUIDE_SLIP = '想留着，把左边的标签拖到卡上。'
+/** The slip is the loudest thing on a clipping, so on the guide it says the one thing to do. */
+export const GUIDE_SLIP = '点开这张，玩法都在背面。'
 
 /** Same mark as the tab icon. A 192px cut, not the 1.8MB master. */
 export const GUIDE_AVATAR = '/brand/mark.png'
