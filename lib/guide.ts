@@ -45,7 +45,7 @@ export const GUIDE_BODY = GUIDE_BLOCKS.filter(
   .map((block) => block.text)
   .join('\n')
 
-export const GUIDE_SLIP = '想留着的卡，按住拖到左边。'
+export const GUIDE_SLIP = '想留着，把左边的标签拖到卡上。'
 
 /** Same mark as the tab icon. A 192px cut, not the 1.8MB master. */
 export const GUIDE_AVATAR = '/brand/mark.png'
