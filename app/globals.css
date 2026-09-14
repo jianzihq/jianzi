@@ -48,7 +48,13 @@ body {
 }
 
 body {
-  background: var(--desk);
+  /* Colour from CSS, structure from the texture — the same split the cards use, but
+     pivoting on mid-grey through soft-light because the desk is dark and a near-white
+     multiply layer would vanish into it. See docs/desk-ground-handoff.md. */
+  background-color: var(--desk);
+  background-image: url('/paper/desk.webp');
+  background-repeat: repeat;
+  background-blend-mode: soft-light;
   color: var(--ink);
   font-family: system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif;
   -webkit-font-smoothing: antialiased;

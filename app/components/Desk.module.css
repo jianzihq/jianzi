@@ -4,8 +4,7 @@
   overflow: hidden;
   cursor: grab;
   touch-action: none;
-  /* The desk ground. Flat colour until the texture lands — see docs/desk-ground-request.md */
-  background: var(--desk);
+  /* The ground is painted on body so both views share one desk. */
 }
 
 .viewport:active {
