@@ -4,7 +4,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useGesture } from '@use-gesture/react'
 import type { Card as CardData } from '@/lib/types'
 import { slotsInView, focusAt, slotCentre, cellAt, type Slot } from '@/lib/desk'
+import { paperOffset } from '@/lib/paper'
+import { domainInk } from '@/lib/domains'
 import { Card } from './Card'
+import { Column } from './Column'
 import styles from './Desk.module.css'
 
 /** How hard the drawn position chases the one input asked for. Lower is more syrup. */
@@ -29,6 +32,15 @@ export function Desk({ cards }: { cards: CardData[] }) {
   // Seeded with a laptop-sized viewport at the origin so the desk arrives with cards
   // already on it. slotsInView is pure, so the server and the first client render agree
   // and nothing pops in after hydration; the real viewport size refines it on mount.
+  /** Which slot is turned over, and whether its animation has been kicked off. */
+  const [opened, setOpened] = useState<{ key: string; index: number } | null>(null)
+  const [turned, setTurned] = useState(false)
+  /** A drag that travelled is not a click, however it ends. */
+  const moved = useRef(false)
+
+  /** Read inside the gesture handlers, which are bound once and never see new state. */
+  const isOpen = useRef(false)
+
   const [slots, setSlots] = useState<Slot[]>(() =>
     slotsInView(0, 0, 1440, 900, cards.length),
   )
@@ -42,7 +54,11 @@ export function Desk({ cards }: { cards: CardData[] }) {
   useGesture(
     {
       // Dragging blank desk moves the desk. Signs match grabbing the paper itself.
-      onDrag: ({ delta: [dx, dy], last, velocity, direction }) => {
+      onDrag: ({ delta: [dx, dy], last, velocity, direction, movement }) => {
+        // While a card is turned over the desk holds still, or closing it would reveal
+        // a desk that has wandered off somewhere behind the reader's back.
+        if (isOpen.current) return
+        if (Math.hypot(movement[0], movement[1]) > 5) moved.current = true
         target.current.x -= dx
         target.current.y -= dy
         if (last) {
@@ -56,6 +72,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
       // desk to sludge. Sign follows native scrolling, so the reader's own
       // natural-scroll setting is already baked in and must not be second-guessed.
       onWheel: ({ delta: [dx, dy], event }) => {
+        if (isOpen.current) return
         // ctrl+wheel is the trackpad pinch. Swallow it or the browser zooms the page.
         if ((event as WheelEvent).ctrlKey) return
         target.current.x += dx
@@ -92,6 +109,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
       const el = e.target as HTMLElement | null
       if (el?.isContentEditable || /^(input|textarea|select)$/i.test(el?.tagName ?? '')) return
 
+      if (isOpen.current) return
       const step = STEP[e.key.toLowerCase()]
       if (!step) return
       e.preventDefault()
@@ -148,6 +166,35 @@ export function Desk({ cards }: { cards: CardData[] }) {
     }
   }, [cards.length])
 
+  const open = useCallback((slot: Slot) => {
+    if (moved.current) return
+    // Bring it to the middle first. The turn then happens where the reader is looking,
+    // and the camera move doubles as the desk receding.
+    const half = { x: size.current.x / 2, y: size.current.y / 2 }
+    target.current.x = slot.x - half.x
+    target.current.y = slot.y - half.y
+    isOpen.current = true
+    setOpened({ key: slot.key, index: slot.index })
+    requestAnimationFrame(() => setTurned(true))
+  }, [])
+
+  const close = useCallback(() => {
+    isOpen.current = false
+    setTurned(false)
+    window.setTimeout(() => setOpened(null), 740)
+  }, [])
+
+  useEffect(() => {
+    if (!opened) return
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close()
+    }
+    window.addEventListener('keydown', onEsc)
+    return () => window.removeEventListener('keydown', onEsc)
+  }, [opened, close])
+
+  const openedCard = opened ? cards[opened.index] : null
+
   return (
     <div ref={viewport} className={styles.viewport}>
       <div ref={plane} className={styles.plane}>
@@ -156,13 +203,52 @@ export function Desk({ cards }: { cards: CardData[] }) {
             key={slot.key}
             ref={registerSlot(slot)}
             className={styles.slot}
-            style={{ left: slot.x, top: slot.y }}
+            style={{ left: slot.x, top: slot.y, visibility: opened?.key === slot.key ? 'hidden' : undefined }}
+            onPointerDown={() => {
+              moved.current = false
+            }}
+            onClick={() => open(slot)}
           >
             <Card card={cards[slot.index]} />
           </div>
         ))}
       </div>
+
       <div className={styles.hud}>拖动 · 触控板两指 · 方向键 / WASD</div>
+
+      {openedCard && (
+        <>
+          <div
+            className={styles.backdrop}
+            data-open={turned}
+            onClick={close}
+            aria-hidden="true"
+          />
+          <div className={styles.stage}>
+            <div
+              className={styles.flipper}
+              data-open={turned}
+              style={
+                {
+                  '--paper-x': `${paperOffset(openedCard.id).x}px`,
+                  '--paper-y': `${paperOffset(openedCard.id).y}px`,
+                  '--stamp-ink': domainInk(openedCard.domain),
+                } as React.CSSProperties
+              }
+            >
+              <div className={`${styles.face} ${styles.front}`}>
+                <Card card={openedCard} />
+              </div>
+              <div className={`${styles.face} ${styles.back}`}>
+                <Column card={openedCard} />
+              </div>
+            </div>
+          </div>
+          <div className={styles.closeHint} data-open={turned}>
+            ESC 或点击四周放回桌上
+          </div>
+        </>
+      )}
     </div>
   )
 }

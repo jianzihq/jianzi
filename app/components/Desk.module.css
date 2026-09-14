@@ -44,3 +44,100 @@
   opacity: 0.7;
   pointer-events: none;
 }
+
+/* ---- opening a card ---- */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(38, 32, 22, 0.52);
+  /* Faded in already blurred. Animating a blur radius is expensive and the desk only
+     ever has to arrive at one state — see PRODUCT section 8. */
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  opacity: 0;
+  transition: opacity 380ms ease;
+}
+
+.backdrop[data-open='true'] {
+  opacity: 1;
+}
+
+.stage {
+  position: fixed;
+  inset: 0;
+  z-index: 21;
+  display: grid;
+  place-items: center;
+  perspective: 2400px;
+  pointer-events: none;
+}
+
+.flipper {
+  position: relative;
+  width: var(--card-w);
+  height: 520px;
+  transform-style: preserve-3d;
+  transform: rotateY(0deg) scale(0.96);
+  transition:
+    transform 720ms cubic-bezier(0.32, 0.72, 0.2, 1),
+    width 720ms cubic-bezier(0.32, 0.72, 0.2, 1),
+    height 720ms cubic-bezier(0.32, 0.72, 0.2, 1);
+  pointer-events: auto;
+}
+
+.flipper[data-open='true'] {
+  width: 640px;
+  height: min(84vh, 940px);
+  /* Around Y, with a touch of perspective: the direction a right hand turns a clipping
+     over. Growing at the same time is the point of flipping rather than expanding —
+     the turn covers the size change, which on its own would look like paper inflating. */
+  transform: rotateY(180deg) scale(1);
+}
+
+.face {
+  position: absolute;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Fixed width and centred, so the container growing around it never stretches the card
+   we are still looking at during the first half of the turn. */
+.front {
+  top: 0;
+  left: 50%;
+  width: var(--card-w);
+  transform: translateX(-50%);
+}
+
+/* A card carries its own tilt as an inline custom property, which no inherited value
+   can outrank. Cancel the rotation itself instead: a clipping brought to the middle to
+   be read should sit square. */
+.front article {
+  transform: none;
+}
+
+.back {
+  inset: 0;
+  transform: rotateY(180deg);
+}
+
+.closeHint {
+  position: fixed;
+  z-index: 22;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper);
+  opacity: 0;
+  transition: opacity 380ms ease 220ms;
+  pointer-events: none;
+}
+
+.closeHint[data-open='true'] {
+  opacity: 0.55;
+}
