@@ -1,9 +1,7 @@
 import { paperOffset, paperTilt, plateOffset, deckleIndex, slipPose } from '@/lib/paper'
 import { DECKLE_COUNT } from './Deckle'
+import { GUIDE_BODY, GUIDE_ID, GUIDE_SLIP, GUIDE_TITLE } from '@/lib/guide'
 import card from './Card.module.css'
-
-/** Stable id so the paper traits do not jump between renders. */
-const ID = 'jianzi:guide'
 
 /**
  * The first-visit clipping. Same stock as the deck — sheet, plate, slip — but none of
@@ -11,9 +9,9 @@ const ID = 'jianzi:guide'
  * DESIGN.md section 11.
  */
 export function GuideCard() {
-  const { x, y } = paperOffset(ID)
-  const plate = plateOffset(ID)
-  const slip = slipPose(ID)
+  const { x, y } = paperOffset(GUIDE_ID)
+  const plate = plateOffset(GUIDE_ID)
+  const slip = slipPose(GUIDE_ID)
 
   return (
     <article
@@ -22,12 +20,12 @@ export function GuideCard() {
         {
           '--paper-x': `${x}px`,
           '--paper-y': `${y}px`,
-          '--tilt': `${paperTilt(ID).toFixed(2)}deg`,
+          '--tilt': `${paperTilt(GUIDE_ID).toFixed(2)}deg`,
           '--stamp-ink': 'var(--ink-soft)',
           '--plate-x': `${plate.x.toFixed(2)}px`,
           '--plate-y': `${plate.y.toFixed(2)}px`,
           '--plate-rot': `${plate.rot.toFixed(3)}deg`,
-          '--deckle': `url(#deckle-${deckleIndex(ID, DECKLE_COUNT)})`,
+          '--deckle': `url(#deckle-${deckleIndex(GUIDE_ID, DECKLE_COUNT)})`,
           '--slip-w': `${slip.width}px`,
           '--slip-left': `${slip.left}px`,
           '--slip-bottom': `${slip.bottom}px`,
@@ -44,9 +42,9 @@ export function GuideCard() {
 
       <h2 className={card.headline}>
         <span className={card.plate} aria-hidden="true">
-          从中间这一张看起
+          {GUIDE_TITLE}
         </span>
-        <span className={card.ink}>从中间这一张看起</span>
+        <span className={card.ink}>{GUIDE_TITLE}</span>
       </h2>
 
       <div className={card.byline}>
@@ -58,11 +56,9 @@ export function GuideCard() {
 
       <hr className={card.rule} />
 
-      <p className={card.body}>
-        中间这一张最清楚，旁边的字会退开一点。桌子可以拖。触控板两指也能挪。方向键会把下一张送到眼前。拖到某张停住了，点它，纸会翻过来。翻过去那一面排的是我们拿到的全部原文开头，撕口下面才去知乎。周围淡下去的是还没走到跟前的剪报。评论里有人顶回去，有人只回了一句玩笑，那些也在翻开的那一面。你在桌上遇见谁，就读谁。
-      </p>
+      <p className={card.body}>{GUIDE_BODY}</p>
 
-      <div className={card.slip}>这张看完就挪开。想留着的卡，按住再拖到左边。</div>
+      <div className={card.slip}>{GUIDE_SLIP}</div>
     </article>
   )
 }
