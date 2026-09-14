@@ -111,3 +111,40 @@ export function onwardPose(id: string): { left: number; rot: number } {
   const h = hash(id + 'onward')
   return { left: 40 + (h % 90), rot: ((h >> 7) % 41) / 10 - 3 }
 }
+
+export type RibbonPose = {
+  /** How far below the usual height the pair was tucked in, in px. */
+  drop: number
+  /** Desk showing between the two roots, in px. */
+  gap: number
+  /** 喜欢 then 不喜欢: each one's angle in degrees (positive swings the tail down) and how far it reaches past the paper, in px. */
+  ribbons: [{ rot: number; reach: number }, { rot: number; reach: number }]
+}
+
+/**
+ * How the two ribbons under an open column were tucked in.
+ *
+ * Per card, like the slip, so the pair reads as something put there by hand rather than as a
+ * control fixed to the screen. The order never changes — 喜欢 above 不喜欢 — so the reader
+ * never has to look twice. The tails may lean towards each other by two degrees at most:
+ * any more and a long, chosen ribbon closes the gap at its tail.
+ */
+export function ribbonPose(id: string): RibbonPose {
+  let h = hash(id + 'ribbon')
+  const rand = (): number => {
+    h = (Math.imul(h, 1103515245) + 12345) >>> 0
+    return (h % 1000) / 1000
+  }
+  const drop = Math.round(rand() * 110)
+  const gap = 22 + Math.round(rand() * 12)
+  const upper = rand() * 8 - 6
+  const lower = Math.max(upper - 2, rand() * 8 - 2)
+  return {
+    drop,
+    gap,
+    ribbons: [
+      { rot: Number(upper.toFixed(2)), reach: 140 + Math.round(rand() * 32) },
+      { rot: Number(lower.toFixed(2)), reach: 140 + Math.round(rand() * 32) },
+    ],
+  }
+}

@@ -44,10 +44,11 @@
 
 .ribbons {
   /* How much of each ribbon lies under the paper. */
-  --tuck: 44px;
+  --tuck: 48px;
   position: fixed;
   z-index: 0;
-  top: 20vh;
+  /* --drop and --gap come from this card's pose. */
+  top: calc(16vh + var(--drop, 0px));
   /* Rooted under the paper's right edge: the column is min(640px, 100vw - 48px) wide and
      centred. Fixed rather than scrolled with the sheet, so they are still at hand when the
      reader reaches the foot of a long answer. */
@@ -55,7 +56,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 14px;
+  gap: var(--gap, 28px);
   opacity: 0;
   pointer-events: none;
   transition: opacity 380ms ease;
@@ -66,8 +67,8 @@
 }
 
 .ribbon {
-  /* How far it reaches out past the paper. */
-  --reach: 112px;
+  /* How far it reaches out past the paper; --base and --rot come from this card's pose. */
+  --reach: var(--base, 150px);
   display: block;
   padding: 0;
   background: none;
@@ -75,21 +76,14 @@
   cursor: pointer;
   pointer-events: none;
   /* Swung about the root, so the end under the paper stays where it is. */
+  rotate: var(--rot, 0deg);
   transform-origin: 0 50%;
   /* The shadow lives on the button: a clip-path on the same element would cut it away. */
-  filter: drop-shadow(0 3px 3px rgba(20, 16, 10, 0.35));
+  filter: drop-shadow(0 4px 4px rgba(20, 16, 10, 0.35));
 }
 
 .ribbons[data-on='true'] .ribbon {
   pointer-events: auto;
-}
-
-.ribbon[data-mark='liked'] {
-  rotate: 3deg;
-}
-
-.ribbon[data-mark='disliked'] {
-  rotate: -2deg;
 }
 
 .band {
@@ -97,12 +91,12 @@
   align-items: center;
   box-sizing: border-box;
   width: calc(var(--tuck) + var(--reach));
-  height: 30px;
-  padding: 0 24px 0 calc(var(--tuck) + 14px);
+  height: 40px;
+  padding: 0 34px 0 calc(var(--tuck) + 20px);
   font-family: var(--song);
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 700;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.32em;
   white-space: nowrap;
   color: var(--ink-soft);
   background-color: #ebe3d1;
@@ -110,7 +104,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.35),
     inset 0 -1px 0 rgba(60, 50, 35, 0.14);
   /* A swallowtail cut into the free end. */
-  clip-path: polygon(0 0, 100% 0, calc(100% - 11px) 50%, 100% 100%, 0 100%);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 50%, 100% 100%, 0 100%);
   transition:
     width 240ms cubic-bezier(0.3, 0.7, 0.2, 1),
     color 160ms ease,
@@ -118,7 +112,7 @@
 }
 
 .ribbon:hover {
-  --reach: 122px;
+  --reach: calc(var(--base, 150px) + 10px);
 }
 
 .ribbon:hover .band {
@@ -127,7 +121,7 @@
 
 /* Chosen: drawn out further, in the red the domain stamp is printed in. */
 .ribbon[aria-pressed='true'] {
-  --reach: 150px;
+  --reach: calc(var(--base, 150px) + 44px);
 }
 
 .ribbon[aria-pressed='true'] .band,

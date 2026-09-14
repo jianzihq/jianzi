@@ -27,7 +27,7 @@ import {
   type Reaction,
 } from '@/lib/prefs'
 import { GUIDE_ID, guideCard, readGuideSeen, rememberGuide, serverGuideSeen, subscribeGuide } from '@/lib/guide'
-import { paperOffset, paperTilt } from '@/lib/paper'
+import { paperOffset, paperTilt, ribbonPose } from '@/lib/paper'
 import { domainInk } from '@/lib/domains'
 import { Card } from './Card'
 import { Column } from './Column'
@@ -851,6 +851,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
               {openedCard.id !== GUIDE_ID && (
                 <ReactionRibbons
                   on={phase === 'reading'}
+                  pose={ribbonPose(openedCard.id)}
                   reaction={reactionOf(prefs, openedCard.id)}
                   onChoose={(reaction) => react(openedCard.id, reaction)}
                 />

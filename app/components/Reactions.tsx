@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import type { RibbonPose } from '@/lib/paper'
 import type { Reaction } from '@/lib/prefs'
 import styles from './Reactions.module.css'
 
@@ -71,21 +72,30 @@ export function ReactionMenu({ x, y, reaction, onChoose, onClose }: MenuProps) {
 type RibbonProps = {
   /** Only while the column is being read; they slide away with it as it turns. */
   on: boolean
+  /** How this card's pair was tucked in — lib/paper.ts. */
+  pose: RibbonPose
   reaction: Reaction | null
   onChoose: (reaction: Reaction) => void
 }
 
 /**
  * The considered way to react: two ribbons tucked under the right edge of the open column,
- * the way a ribbon marks a page. They belong to the sheet rather than lying loose on the desk.
- * The chosen one is drawn further out and turns red; choosing it again tucks it back.
+ * the way a ribbon marks a page. They belong to the sheet rather than lying loose on the desk,
+ * and every card has them tucked in a little differently. The chosen one is drawn further out
+ * and turns red; choosing it again tucks it back.
  *
  * Rendered inside the stage and before the sheet, so the paper lies over their roots.
  */
-export function ReactionRibbons({ on, reaction, onChoose }: RibbonProps) {
+export function ReactionRibbons({ on, pose, reaction, onChoose }: RibbonProps) {
   return (
-    <div className={styles.ribbons} data-on={on} role="group" aria-label="这张怎么样">
-      {MARKS.map((mark) => (
+    <div
+      className={styles.ribbons}
+      data-on={on}
+      role="group"
+      aria-label="这张怎么样"
+      style={{ '--drop': `${pose.drop}px`, '--gap': `${pose.gap}px` } as React.CSSProperties}
+    >
+      {MARKS.map((mark, i) => (
         <button
           key={mark.id}
           type="button"
@@ -94,6 +104,12 @@ export function ReactionRibbons({ on, reaction, onChoose }: RibbonProps) {
           aria-pressed={reaction === mark.id}
           disabled={!on}
           onClick={() => onChoose(mark.id)}
+          style={
+            {
+              '--rot': `${pose.ribbons[i].rot}deg`,
+              '--base': `${pose.ribbons[i].reach}px`,
+            } as React.CSSProperties
+          }
         >
           <span className={styles.band}>{mark.label}</span>
         </button>
