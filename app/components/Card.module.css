@@ -3,8 +3,10 @@
 .card {
   position: relative;
   width: var(--card-w);
-  height: var(--card-h);
-  padding: 20px 22px 0;
+  /* Height follows the content. A long question makes a taller clipping, which is
+     variation the material earns; a randomised height would only be a dice roll. */
+  min-height: var(--card-h);
+  padding: 20px 22px 30px;
   overflow: hidden;
 
   /* Colour comes from CSS, fibre from the texture. One sheet, a different patch per
@@ -61,22 +63,40 @@
 /* ---- headline ---- */
 
 .headline {
+  position: relative;
   margin: 14px 0 0;
   font-family: var(--song);
   font-size: 25px;
   font-weight: 700;
   line-height: 1.34;
   letter-spacing: 0.01em;
+}
 
+/* Both layers share one box and one clamp, so they can never break lines differently.
+   Four lines is a guard against a future monster, not a trim: the longest title in the
+   pool runs to three. */
+.plate,
+.ink {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
 
-  /* The colour plate that missed registration. A shadow rather than a duplicated
-     text layer: it paints behind the glyphs and follows the same line breaking and
-     the same clamp, so it cannot drift out of register with the text it doubles. */
-  text-shadow: 1px 1.1px 0 rgba(181, 65, 47, 0.42);
+/* The colour plate that missed registration — a real second impression, shifted and
+   turned by a fraction of a degree, not a shadow under each glyph. */
+.plate {
+  position: absolute;
+  inset: 0;
+  color: var(--registration);
+  opacity: 0.45;
+  transform: translate(var(--plate-x), var(--plate-y)) rotate(var(--plate-rot));
+  transform-origin: 0 50%;
+}
+
+.ink {
+  position: relative;
+  color: var(--ink);
 }
 
 /* ---- byline ---- */

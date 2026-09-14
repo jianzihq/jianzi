@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import type { Card as CardData } from '@/lib/types'
 import { domainInk } from '@/lib/domains'
-import { paperOffset, paperTilt } from '@/lib/paper'
+import { paperOffset, paperTilt, plateOffset } from '@/lib/paper'
 import styles from './Card.module.css'
 
 /**
@@ -13,6 +13,7 @@ import styles from './Card.module.css'
  */
 export function Card({ card }: { card: CardData }) {
   const { x, y } = paperOffset(card.id)
+  const plate = plateOffset(card.id)
   const ink = domainInk(card.domain)
 
   return (
@@ -24,6 +25,9 @@ export function Card({ card }: { card: CardData }) {
           '--paper-y': `${y}px`,
           '--tilt': `${paperTilt(card.id).toFixed(2)}deg`,
           '--stamp-ink': ink,
+          '--plate-x': `${plate.x.toFixed(2)}px`,
+          '--plate-y': `${plate.y.toFixed(2)}px`,
+          '--plate-rot': `${plate.rot.toFixed(3)}deg`,
         } as React.CSSProperties
       }
     >
@@ -34,7 +38,12 @@ export function Card({ card }: { card: CardData }) {
         {card.domain && <span className={styles.stamp}>{card.domain}</span>}
       </div>
 
-      <h2 className={styles.headline}>{card.title}</h2>
+      <h2 className={styles.headline}>
+        <span className={styles.plate} aria-hidden="true">
+          {card.title}
+        </span>
+        <span className={styles.ink}>{card.title}</span>
+      </h2>
 
       <div className={styles.byline}>
         {card.author ? (

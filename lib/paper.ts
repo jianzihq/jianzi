@@ -22,3 +22,21 @@ export function paperTilt(id: string): number {
   const h = hash(id + 'tilt')
   return ((h % 300) / 100 - 1.5)
 }
+
+/**
+ * How far this card's colour plate missed registration.
+ *
+ * Constant within a card and different between cards, which is how a press actually
+ * behaves: the plate sits where it sits for the whole impression, and the next sheet
+ * off the roller sits somewhere slightly else. A uniform per-glyph offset reads as an
+ * emboss instead — the give-away is that it cannot rotate, and a slipped plate always
+ * rotates a little.
+ */
+export function plateOffset(id: string): { x: number; y: number; rot: number } {
+  const h = hash(id + 'plate')
+  return {
+    x: ((h % 33) / 10 - 1.4),
+    y: (((h >> 6) % 16) / 10 + 0.3),
+    rot: (((h >> 12) % 45) / 100 - 0.22),
+  }
+}
