@@ -3,7 +3,6 @@ import type { Card as CardData } from '@/lib/types'
 import { domainInk } from '@/lib/domains'
 import { paperOffset, paperTilt, plateOffset, deckleIndex, slipPose } from '@/lib/paper'
 import { DECKLE_COUNT } from './Deckle'
-import { paragraphs } from '@/lib/paragraphs'
 import styles from './Card.module.css'
 
 /**
@@ -74,11 +73,7 @@ export function Card({ card }: { card: CardData }) {
 
       <hr className={styles.rule} />
 
-      <div className={styles.body}>
-        {paragraphs(card.excerpt).map((para, i) => (
-          <p key={i}>{para}</p>
-        ))}
-      </div>
+      <p className={styles.body}>{card.excerpt}</p>
 
       {/* The slip sits on top of where the body keeps going. We hand over a reason and
           the rest of the text is for the reader to go and find. */}
