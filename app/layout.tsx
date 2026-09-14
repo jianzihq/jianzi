@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { DeckleDefs } from './components/Deckle'
 
 export const metadata: Metadata = {
   title: '见字 JIANZI',
@@ -9,7 +10,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN">
-      <body>{children}</body>
+      <body>
+        <DeckleDefs />
+        {children}
+      </body>
     </html>
   )
 }

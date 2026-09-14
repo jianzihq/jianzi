@@ -40,3 +40,8 @@ export function plateOffset(id: string): { x: number; y: number; rot: number } {
     rot: (((h >> 12) % 45) / 100 - 0.22),
   }
 }
+
+/** Which deckle filter this card's sheet uses. Stable, like every other paper trait. */
+export function deckleIndex(id: string, count: number): number {
+  return hash(id + 'deckle') % count
+}

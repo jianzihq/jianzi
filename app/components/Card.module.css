@@ -7,7 +7,15 @@
      variation the material earns; a randomised height would only be a dice roll. */
   min-height: var(--card-h);
   padding: 20px 22px 30px;
-  overflow: hidden;
+  transform: rotate(var(--tilt));
+}
+
+/* The sheet is its own layer so the deckle filter can chew its edge without dragging
+   the type along with it. */
+.sheet {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
 
   /* Colour comes from CSS, fibre from the texture. One sheet, a different patch per
      card, so the deck is same-stock rather than same-sticker. */
@@ -17,15 +25,22 @@
   background-blend-mode: multiply;
   background-position: var(--paper-x) var(--paper-y);
 
-  transform: rotate(var(--tilt));
+  border: 1px solid var(--paper-edge);
 
-  /* A sheet lying on a surface: one tight contact shadow, one soft cast. */
+  /* A sheet lying on a surface: one tight contact shadow, one soft cast. The filter
+     runs after the shadow, so the shadow follows the torn edge instead of outlining a
+     rectangle the paper no longer has. */
   box-shadow:
     0 1px 1px rgba(60, 50, 35, 0.16),
     0 8px 18px -6px rgba(60, 50, 35, 0.22);
 
-  /* Placeholder until the deckle mask lands — see the handoff doc. */
-  border: 1px solid var(--paper-edge);
+  filter: var(--deckle);
+}
+
+/* Everything printed on the sheet rides above it, untouched by the filter. */
+.card > *:not(.sheet) {
+  position: relative;
+  z-index: 1;
 }
 
 /* ---- masthead ---- */

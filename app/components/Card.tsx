@@ -1,7 +1,8 @@
 import Image from 'next/image'
 import type { Card as CardData } from '@/lib/types'
 import { domainInk } from '@/lib/domains'
-import { paperOffset, paperTilt, plateOffset } from '@/lib/paper'
+import { paperOffset, paperTilt, plateOffset, deckleIndex } from '@/lib/paper'
+import { DECKLE_COUNT } from './Deckle'
 import styles from './Card.module.css'
 
 /**
@@ -28,9 +29,12 @@ export function Card({ card }: { card: CardData }) {
           '--plate-x': `${plate.x.toFixed(2)}px`,
           '--plate-y': `${plate.y.toFixed(2)}px`,
           '--plate-rot': `${plate.rot.toFixed(3)}deg`,
+          '--deckle': `url(#deckle-${deckleIndex(card.id, DECKLE_COUNT)})`,
         } as React.CSSProperties
       }
     >
+      <div className={styles.sheet} />
+
       <div className={styles.masthead}>
         <span className={styles.source}>
           知乎 · {card.stats.year} · {card.stats.votes} 赞 · {card.stats.comments} 评
