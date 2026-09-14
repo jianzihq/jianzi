@@ -133,9 +133,11 @@ export function Desk({ cards }: { cards: CardData[] }) {
   const prefs = useSyncExternalStore(subscribePrefs, readPrefs, serverPrefs)
   const base = useMemo(() => spread(cards), [cards])
   const deck = useMemo(() => orderDeck(base, prefs), [base, prefs])
+  const liked = useMemo(() => new Set(prefs.liked), [prefs])
   /** Read by the frame loop, which is bound once. */
   const deckRef = useRef(deck)
-  /** Cards reacted to during this visit. They stay where they lie; only new cells skip them. */
+  const likedRef = useRef(liked)
+  /** Cards reacted to during this visit. They stay where they lie, whatever is dealt next. */
   const reactedHere = useRef(new Set<string>())
   const [deal] = useState(() => createDealer(cards))
 
@@ -152,11 +154,12 @@ export function Desk({ cards }: { cards: CardData[] }) {
   }, [slots])
 
   // A reaction reorders what is dealt from here on. The loop also deals again any cell the
-  // server filled with a card this browser had already reacted to on an earlier visit.
+  // server filled with a card this browser had already disliked on an earlier visit.
   useEffect(() => {
     deckRef.current = deck
+    likedRef.current = liked
     dirty.current = true
-  }, [deck])
+  }, [deck, liked])
 
   const [phase, setPhaseState] = useState<Phase>('idle')
   /** Mirrors phase for handlers and timers, which would otherwise read a stale one. */
@@ -370,7 +373,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
       // React is woken only when what is on screen actually changes: a cell arriving or
       // leaving, or a cell dealt a new card.
       const cells = cellsInView(c.x, c.y, size.current.x, size.current.y, L)
-      const next = deal(cells, deckRef.current, reactedHere.current)
+      const next = deal(cells, deckRef.current, { stays: reactedHere.current, liked: likedRef.current })
       const key = signature(next)
       if (key !== slotKeys.current) {
         slotKeys.current = key
@@ -663,7 +666,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
       const nextSlots = deal(
         cellsInView(camera.x, camera.y, size.current.x, size.current.y, now),
         deckRef.current,
-        reactedHere.current,
+        { stays: reactedHere.current, liked: likedRef.current },
       )
       slotKeys.current = signature(nextSlots)
       setSlots(nextSlots)

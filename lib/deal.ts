@@ -11,27 +11,41 @@
  * reader who had already wandered past most of the untouched domains would be dealt what was
  * left of the old pass — mostly the domain they had just reacted to.
  *
- * A reaction changes what is dealt next, never what already lies on the desk. A card liked or
- * disliked during this visit stays in its cell and is simply not dealt again. The one card
- * that does move is one reacted to on an earlier visit: the server deals before this
- * browser's prefs are known, so such a card can land on the first screen, and its cell is
- * dealt again as soon as they arrive.
+ * A liked card stays in the deck, at its end, and sits out two passes after each time it is
+ * laid down: the reader meets it again now and then, not every pass. The rest is counted in
+ * deals rather than drawn at random. With a deck this small, chance would bring a liked card
+ * back twice in a row as readily as never, and a fixed rule can be tested and shown.
+ *
+ * A reaction changes what is dealt next, never what already lies on the desk. A card reacted
+ * to during this visit stays in its cell. The one card that does move is one disliked on an
+ * earlier visit: the server deals before this browser's prefs are known, so such a card can
+ * land on the first screen, and its cell is dealt again as soon as they arrive.
  */
 
 import type { Card } from './types'
 import type { Cell, Slot } from './desk'
 
-/**
- * Deal the cells on screen. `stays` holds the cards reacted to during this visit: they have
- * left the deck, but keep the cells they already lie in.
- */
-export type Dealer = (cells: Cell[], deck: Card[], stays?: ReadonlySet<string>) => Slot[]
+export type Marks = {
+  /**
+   * Cards reacted to during this visit. A disliked one has left the deck but keeps the cell
+   * it already lies in.
+   */
+  stays?: ReadonlySet<string>
+  /** Liked cards, which rest between deals. */
+  liked?: ReadonlySet<string>
+}
+
+/** Deal the cells on screen. */
+export type Dealer = (cells: Cell[], deck: Card[], marks?: Marks) => Slot[]
 
 /**
  * How many of the latest deals count as recent: about a screenful and a column, so a card
  * that has just scrolled off is not laid straight back down. Never more than half the deck.
  */
 const RECENT = 24
+
+/** Passes a liked card sits out after each time it is laid down. */
+const LIKED_REST_PASSES = 2
 
 const NONE: ReadonlySet<string> = new Set()
 
@@ -47,7 +61,7 @@ export function createDealer(cards: Card[]): Dealer {
   let passStart = 0
   let lastDeck: Card[] | null = null
 
-  return (cells, deck, stays = NONE) => {
+  return (cells, deck, { stays = NONE, liked = NONE } = {}) => {
     if (deck !== lastDeck) {
       if (lastDeck !== null) passStart = deals
       lastDeck = deck
@@ -56,19 +70,24 @@ export function createDealer(cards: Card[]): Dealer {
     const onDeck = new Set(deck.map((card) => card.id))
     const onScreen = new Set<string>()
     const span = Math.min(RECENT, Math.floor(deck.length / 2))
+    // A pass is about as many deals as the deck is long.
+    const rest = LIKED_REST_PASSES * deck.length
     const at = (id: string) => dealtAt.get(id) ?? -Infinity
     const inPass = (id: string) => at(id) >= passStart
     const recent = (id: string) => deals - at(id) <= span
-    const first = (ok: (id: string) => boolean) =>
+    const awake = (id: string) => !liked.has(id) || deals - at(id) > rest
+    const pick = (ok: (id: string) => boolean) =>
       deck.find((card) => !onScreen.has(card.id) && ok(card.id))?.id
 
     const next = (): string | undefined => {
-      let id = first((c) => !inPass(c) && !recent(c)) ?? first((c) => !inPass(c))
+      let id = pick((c) => awake(c) && !inPass(c) && !recent(c)) ?? pick((c) => awake(c) && !inPass(c))
       if (id === undefined) {
-        // Everything on offer has been dealt this pass: begin the next one.
+        // Everything awake has been dealt this pass: begin the next one.
         passStart = deals
-        id = first((c) => !recent(c)) ?? first(() => true)
+        id = pick((c) => awake(c) && !recent(c)) ?? pick(awake)
       }
+      // Only when every card left is resting or on screen does a liked card come back early.
+      id ??= pick(() => true)
       if (id !== undefined) return id
       // A deck smaller than the screen has to repeat itself: the card laid down longest ago.
       let oldest: string | undefined
