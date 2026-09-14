@@ -60,8 +60,8 @@
 | `ZHIHU_OAUTH_APP_KEY` | 换取 token | **只能在服务端** |
 | `ZHIHU_OAUTH_REDIRECT_URI` | 回调地址 | 必须和活动页登记的值逐字一致 |
 | `SESSION_SECRET` | 会话签名 / 加密 | **只能在服务端**，至少 32 字节随机值 |
-| `UPSTASH_REDIS_REST_URL` | B3 Redis REST 地址 | **只能在服务端** |
-| `UPSTASH_REDIS_REST_TOKEN` | B3 Redis REST token | **只能在服务端** |
+| `UPSTASH_REDIS_REST_URL` 或 `KV_REST_API_URL` | B3 Redis REST 地址 | **只能在服务端**。Vercel KV / Upstash 集成写入 `KV_*` 即可 |
+| `UPSTASH_REDIS_REST_TOKEN` 或 `KV_REST_API_TOKEN` | B3 Redis REST token | **只能在服务端**。读写用这个，不要用 `READ_ONLY` 那份 |
 
 **不要给任何密钥加 `NEXT_PUBLIC_` 前缀**，带这个前缀的变量会被打包进前端代码，等于公开。
 
