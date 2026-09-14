@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useGesture } from '@use-gesture/react'
 import type { Card as CardData } from '@/lib/types'
 import {
@@ -15,14 +15,17 @@ import {
   type View,
 } from '@/lib/desk'
 import type { TagId } from '@/lib/collections'
+import { dismissGuide, readGuideSeen, serverGuideSeen, subscribeGuide } from '@/lib/guide'
 import { paperOffset, paperTilt } from '@/lib/paper'
 import { domainInk } from '@/lib/domains'
 import { Card } from './Card'
 import { Column } from './Column'
+import { GuideCard } from './GuideCard'
 import { ListView } from './ListView'
 import { Shelf, DragGhost } from './Shelf'
 import { useCollect } from './useCollect'
 import styles from './Desk.module.css'
+import guideStyles from './GuideCard.module.css'
 
 /** How hard the drawn position chases the one input asked for. Lower is more syrup. */
 const CHASE = 0.12
@@ -143,6 +146,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
   /** Open the list narrowed to a tag. Clicking the tag already shown goes back to every card. */
   const showTag = useCallback((tag: TagId) => {
     if (isOpen.current) return
+    dismissGuide()
     const wasList = listRef.current
     setFilter((f) => (wasList && f === tag ? null : tag))
     listRef.current = true
@@ -153,6 +157,11 @@ export function Desk({ cards }: { cards: CardData[] }) {
     cards,
     { blocked, onTagClick: showTag },
   )
+
+  const guideSeen = useSyncExternalStore(subscribeGuide, readGuideSeen, serverGuideSeen)
+  const showGuide = view === 'compact' && !listOpen && !guideSeen
+  const showGuideRef = useRef(false)
+  showGuideRef.current = showGuide
 
   const registerSlot = useCallback((slot: Slot) => (el: HTMLDivElement | null) => {
     if (el) nodes.current.set(slot.key, { el, x: slot.x, y: slot.y, drift: slot.drift })
@@ -180,6 +189,9 @@ export function Desk({ cards }: { cards: CardData[] }) {
         // while a card has been lifted off it to be filed.
         if (isOpen.current || listRef.current || isLifting()) return
         if (Math.hypot(movement[0], movement[1]) > 5) moved.current = true
+        // Dragging the desk itself is putting the note aside. A small fidget while
+        // reading it should not count.
+        if (showGuideRef.current && Math.hypot(movement[0], movement[1]) > 80) dismissGuide()
         target.current.x -= dx
         target.current.y -= dy
         if (last) {
@@ -201,6 +213,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
           return
         }
         if (isOpen.current || listRef.current) return
+        if (showGuideRef.current && Math.hypot(dx, dy) > 40) dismissGuide()
         target.current.x += dx
         target.current.y += dy
       },
@@ -241,6 +254,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
       const step = STEP[e.key.toLowerCase()]
       if (!step) return
       e.preventDefault()
+      if (showGuideRef.current) dismissGuide()
 
       // Snap to the card itself, not one cell along from wherever the pointer stopped.
       // Stepping by a cell width preserves whatever offset the drag left behind, which
@@ -421,6 +435,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
   const open = useCallback(
     (slot: Slot) => {
       if (moved.current || liftedLastPress()) return
+      dismissGuide()
       const article = nodes.current.get(slot.key)?.el.querySelector('article')
       const source: Source = { kind: 'desk', x: slot.x, y: slot.y, drift: slot.drift }
       if (!openCard(cards[slot.index], slot.key, source, article)) return
@@ -534,6 +549,15 @@ export function Desk({ cards }: { cards: CardData[] }) {
     return () => window.removeEventListener('keydown', onEsc)
   }, [active, close])
 
+  useEffect(() => {
+    if (!showGuide) return
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') dismissGuide()
+    }
+    window.addEventListener('keydown', onEsc)
+    return () => window.removeEventListener('keydown', onEsc)
+  }, [showGuide])
+
   // While reading, the stage covers the screen above the backdrop, so it decides for itself
   // whether a click landed on paper or on desk. Paper, ink and the note stop their own
   // clicks; what is listed here are the transparent boxes around them.
@@ -599,9 +623,10 @@ export function Desk({ cards }: { cards: CardData[] }) {
     [cards.length],
   )
 
-  const chooseTab = useCallback(
+    const chooseTab = useCallback(
     (tab: Tab) => {
       if (isOpen.current) return
+      dismissGuide()
       if (tab === 'list') {
         listRef.current = true
         setListOpen(true)
@@ -661,6 +686,25 @@ export function Desk({ cards }: { cards: CardData[] }) {
             </div>
           ))}
         </div>
+
+        {showGuide && (
+          <div
+            className={guideStyles.guide}
+            role="button"
+            tabIndex={0}
+            aria-label="桌上的说明。点它或把桌子拖开，这张就会收走。"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => dismissGuide()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                dismissGuide()
+              }
+            }}
+          >
+            <GuideCard />
+          </div>
+        )}
 
         <div className={styles.hud}>拖动 · 触控板两指 · 方向键 / WASD · 按住卡片拖进左侧标签</div>
 
