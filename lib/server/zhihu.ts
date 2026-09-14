@@ -9,7 +9,7 @@ const asString = (value: unknown): string => (typeof value === 'string' ? value 
 
 export function oauthConfig(): { appId: string; appKey: string; redirectUri: string } | null {
   const appId = process.env.ZHIHU_OAUTH_APP_ID ?? ''
-  const appKey = process.env.ZHIHU_OAUTH_APP_KEY ?? process.env.ZHIHU_KEY_MAX ?? ''
+  const appKey = process.env.ZHIHU_OAUTH_APP_KEY ?? ''
   const redirectUri = process.env.ZHIHU_OAUTH_REDIRECT_URI ?? ''
   if (!appId || !appKey || !redirectUri) return null
   return { appId, appKey, redirectUri }
