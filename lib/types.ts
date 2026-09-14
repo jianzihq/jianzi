@@ -7,7 +7,8 @@ export type Card = {
   /** Link to the original on zhihu.com. The card's final destination. */
   url: string
   contentType: 'Answer' | 'Article'
-  /** ContentText verbatim — the opening of the answer, ~1000 chars. Never edited. */
+  /** ContentText verbatim — the opening of the answer, ~1000 chars. Never edited.
+   *  Paragraphs arrive as `\\n`. Not Markdown, not HTML. */
   excerpt: string
   /** null means the API gave us no author. Render 署名不详, never a blank row. */
   author: Author | null

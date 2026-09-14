@@ -169,13 +169,21 @@
 
 .body {
   margin: 22px 0 0;
+}
+
+.body p {
+  margin: 0;
   font-family: var(--serif);
   font-size: 16px;
   line-height: 2.05;
   text-align: justify;
 }
 
-.body::first-line {
+.body p + p {
+  margin-top: 1.15em;
+}
+
+.body p:first-child::first-line {
   font-weight: 600;
 }
 
