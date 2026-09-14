@@ -81,6 +81,9 @@
 }
 
 .item {
+  /* The ribbon tail tucks under the card inside this item, not under the list. */
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -3,7 +3,10 @@
 import { useEffect, useRef } from 'react'
 import type { Card as CardData } from '@/lib/types'
 import { tagLabel, type Collections, type TagId } from '@/lib/collections'
+import type { Prefs } from '@/lib/deck'
+import { reactionOf } from '@/lib/prefs'
 import { Card } from './Card'
+import { ReactionTail } from './Reactions'
 import styles from './ListView.module.css'
 
 type Props = {
@@ -19,6 +22,8 @@ type Props = {
   onRemove: (tag: TagId, id: string) => void
   /** Right-click: like or dislike, the same slip as on the desk. */
   onMenu: (e: React.MouseEvent<HTMLElement>, card: CardData) => void
+  /** For the ribbon tail on cards the reader has reacted to. */
+  prefs: Prefs
 }
 
 /**
@@ -35,6 +40,7 @@ export function ListView({
   onShowAll,
   onRemove,
   onMenu,
+  prefs,
 }: Props) {
   const scroller = useRef<HTMLDivElement>(null)
 
@@ -98,6 +104,7 @@ export function ListView({
               onClick={(e) => onOpen(card, e.currentTarget)}
               onContextMenu={(e) => onMenu(e, card)}
             >
+              <ReactionTail cardId={card.id} reaction={reactionOf(prefs, card.id)} />
               <Card card={card} />
               {filter && (
                 <button

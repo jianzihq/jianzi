@@ -11,23 +11,29 @@
  * reader who had already wandered past most of the untouched domains would be dealt what was
  * left of the old pass — mostly the domain they had just reacted to.
  *
- * A cell whose card has left the deck, liked or disliked, is dealt again in place.
+ * A reaction changes what is dealt next, never what already lies on the desk. A card liked or
+ * disliked during this visit stays in its cell and is simply not dealt again. The one card
+ * that does move is one reacted to on an earlier visit: the server deals before this
+ * browser's prefs are known, so such a card can land on the first screen, and its cell is
+ * dealt again as soon as they arrive.
  */
 
 import type { Card } from './types'
 import type { Cell, Slot } from './desk'
 
 /**
- * Deal the cells on screen. `hold` names a cell whose card stays even if it has left the
- * deck: the one turned over, until it is put back.
+ * Deal the cells on screen. `stays` holds the cards reacted to during this visit: they have
+ * left the deck, but keep the cells they already lie in.
  */
-export type Dealer = (cells: Cell[], deck: Card[], hold?: string | null) => Slot[]
+export type Dealer = (cells: Cell[], deck: Card[], stays?: ReadonlySet<string>) => Slot[]
 
 /**
  * How many of the latest deals count as recent: about a screenful and a column, so a card
  * that has just scrolled off is not laid straight back down. Never more than half the deck.
  */
 const RECENT = 24
+
+const NONE: ReadonlySet<string> = new Set()
 
 /** A dealer for one visit. Slot indexes point into `cards`; every deck is drawn from them. */
 export function createDealer(cards: Card[]): Dealer {
@@ -41,7 +47,7 @@ export function createDealer(cards: Card[]): Dealer {
   let passStart = 0
   let lastDeck: Card[] | null = null
 
-  return (cells, deck, hold = null) => {
+  return (cells, deck, stays = NONE) => {
     if (deck !== lastDeck) {
       if (lastDeck !== null) passStart = deals
       lastDeck = deck
@@ -73,16 +79,14 @@ export function createDealer(cards: Card[]): Dealer {
     // Cells keep what they hold first, so a card already on screen is never dealt beside it.
     const kept = cells.map((cell) => {
       const id = placed.get(cell.key)
-      if (id === undefined || !(onDeck.has(id) || cell.key === hold)) return undefined
+      if (id === undefined || !(onDeck.has(id) || stays.has(id))) return undefined
       onScreen.add(id)
       return id
     })
 
     return cells.flatMap((cell, k) => {
       let id = kept[k]
-      let redealt = false
       if (id === undefined) {
-        redealt = placed.has(cell.key)
         id = next()
         if (id !== undefined) {
           placed.set(cell.key, id)
@@ -92,7 +96,7 @@ export function createDealer(cards: Card[]): Dealer {
         }
       }
       const index = id === undefined ? undefined : indexOf.get(id)
-      return index === undefined ? [] : [{ ...cell, index, redealt }]
+      return index === undefined ? [] : [{ ...cell, index }]
     })
   }
 }

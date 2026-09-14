@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import type { RibbonPose } from '@/lib/paper'
+import { ribbonPose, type RibbonPose } from '@/lib/paper'
 import type { Reaction } from '@/lib/prefs'
 import styles from './Reactions.module.css'
 
@@ -115,5 +115,29 @@ export function ReactionRibbons({ on, pose, reaction, onChoose }: RibbonProps) {
         </button>
       ))}
     </div>
+  )
+}
+
+/**
+ * What a reaction leaves on a card lying on the desk or in the list: the end of its ribbon,
+ * showing from under the card's right edge where that ribbon sat in the column and at the
+ * same angle. 喜欢 red, 不喜欢 ink — the colours a chosen ribbon takes.
+ */
+export function ReactionTail({ cardId, reaction }: { cardId: string; reaction: Reaction | null }) {
+  if (!reaction) return null
+  const i = reaction === 'liked' ? 0 : 1
+  const pose = ribbonPose(cardId)
+  return (
+    <span
+      className={styles.tail}
+      data-mark={reaction}
+      aria-hidden="true"
+      style={
+        {
+          '--tail-top': 96 + Math.round(pose.drop / 2) + i * 40,
+          '--rot': `${pose.ribbons[i].rot}deg`,
+        } as React.CSSProperties
+      }
+    />
   )
 }

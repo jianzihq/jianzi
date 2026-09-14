@@ -33,7 +33,7 @@ import { Card } from './Card'
 import { Column } from './Column'
 import { GuideCard } from './GuideCard'
 import { ListView } from './ListView'
-import { ReactionMenu, ReactionRibbons } from './Reactions'
+import { ReactionMenu, ReactionRibbons, ReactionTail } from './Reactions'
 import { Shelf, DragGhost } from './Shelf'
 import { useCollect, pulse } from './useCollect'
 import styles from './Desk.module.css'
@@ -135,6 +135,8 @@ export function Desk({ cards }: { cards: CardData[] }) {
   const deck = useMemo(() => orderDeck(base, prefs), [base, prefs])
   /** Read by the frame loop, which is bound once. */
   const deckRef = useRef(deck)
+  /** Cards reacted to during this visit. They stay where they lie; only new cells skip them. */
+  const reactedHere = useRef(new Set<string>())
   const [deal] = useState(() => createDealer(cards))
 
   // Seeded with a laptop-sized viewport at the origin so the desk arrives with cards
@@ -149,7 +151,8 @@ export function Desk({ cards }: { cards: CardData[] }) {
     slotsRef.current = slots
   }, [slots])
 
-  // A reaction takes its card off the deck; the loop deals the cell that held it again.
+  // A reaction reorders what is dealt from here on. The loop also deals again any cell the
+  // server filled with a card this browser had already reacted to on an earlier visit.
   useEffect(() => {
     deckRef.current = deck
     dirty.current = true
@@ -365,10 +368,9 @@ export function Desk({ cards }: { cards: CardData[] }) {
       }
 
       // React is woken only when what is on screen actually changes: a cell arriving or
-      // leaving, or a cell dealt a new card. The card turned over keeps its cell until it
-      // has been put back.
+      // leaving, or a cell dealt a new card.
       const cells = cellsInView(c.x, c.y, size.current.x, size.current.y, L)
-      const next = deal(cells, deckRef.current, openedRef.current?.key)
+      const next = deal(cells, deckRef.current, reactedHere.current)
       const key = signature(next)
       if (key !== slotKeys.current) {
         slotKeys.current = key
@@ -429,8 +431,6 @@ export function Desk({ cards }: { cards: CardData[] }) {
       if (!isLive(g, 'returning')) return
       isOpen.current = false
       openedRef.current = null
-      // A card liked or disliked while open leaves the desk now that it is back in its cell.
-      dirty.current = true
       setOpened(null)
       setPhase('idle')
     },
@@ -663,6 +663,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
       const nextSlots = deal(
         cellsInView(camera.x, camera.y, size.current.x, size.current.y, now),
         deckRef.current,
+        reactedHere.current,
       )
       slotKeys.current = signature(nextSlots)
       setSlots(nextSlots)
@@ -761,6 +762,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
   }, [])
 
   const react = useCallback((cardId: string, reaction: Reaction) => {
+    reactedHere.current.add(cardId)
     writePrefs(toggleReaction(readPrefs(), cardId, reaction))
   }, [])
 
@@ -790,12 +792,10 @@ export function Desk({ cards }: { cards: CardData[] }) {
             const guiding = showGuide && slot.key === guideKey
             return (
               <div
-                // Keyed by card too, so a cell dealt again mounts fresh and plays its arrival.
-                key={`${slot.key}:${slot.index}`}
+                key={slot.key}
                 ref={registerSlot(slot)}
                 className={styles.slot}
                 data-card={guiding ? undefined : cards[slot.index].id}
-                data-redealt={slot.redealt || undefined}
                 style={{
                   left: slot.x,
                   top: slot.y,
@@ -808,7 +808,17 @@ export function Desk({ cards }: { cards: CardData[] }) {
                 onClick={() => open(slot)}
                 onContextMenu={guiding ? undefined : (e) => openMenu(e, cards[slot.index])}
               >
-                {guiding ? <GuideCard /> : <Card card={cards[slot.index]} />}
+                {guiding ? (
+                  <GuideCard />
+                ) : (
+                  <>
+                    <ReactionTail
+                      cardId={cards[slot.index].id}
+                      reaction={reactionOf(prefs, cards[slot.index].id)}
+                    />
+                    <Card card={cards[slot.index]} />
+                  </>
+                )}
               </div>
             )
           })}
@@ -829,6 +839,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
             onShowAll={showAll}
             onRemove={remove}
             onMenu={openMenu}
+            prefs={prefs}
           />
         )}
 

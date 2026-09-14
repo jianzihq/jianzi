@@ -79,8 +79,6 @@ export type Cell = {
 export type Slot = Cell & {
   /** Index into the desk's cards. */
   index: number
-  /** The card it held left the deck, and this one was just laid in its place. */
-  redealt: boolean
 }
 
 const hash2 = (i: number, j: number): number => {

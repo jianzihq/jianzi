@@ -45,6 +45,7 @@
 .ribbons {
   /* How much of each ribbon lies under the paper. */
   --tuck: 48px;
+  --ribbon-ink: #3b342b;
   position: fixed;
   z-index: 0;
   /* --drop and --gap come from this card's pose. */
@@ -119,7 +120,8 @@
   color: var(--ink);
 }
 
-/* Chosen: drawn out further, in the red the domain stamp is printed in. */
+/* Chosen: drawn out further and inked — 喜欢 in the red the domain stamp is printed in,
+   不喜欢 in ink. The tail left on the card takes the same colour. */
 .ribbon[aria-pressed='true'] {
   --reach: calc(var(--base, 150px) + 44px);
 }
@@ -130,6 +132,11 @@
   background-color: var(--registration);
 }
 
+.ribbon[data-mark='disliked'][aria-pressed='true'] .band,
+.ribbon[data-mark='disliked'][aria-pressed='true']:hover .band {
+  background-color: var(--ribbon-ink);
+}
+
 .ribbon:focus-visible {
   outline: 2px solid var(--paper);
   outline-offset: 3px;
@@ -137,4 +144,32 @@
 
 .ribbon:disabled {
   cursor: default;
+}
+
+/* ---- what a reaction leaves on the card ---- */
+
+/* The end of the chosen ribbon under a card's right edge. Scales with the card; sits below
+   the card inside the slot's (or list item's) own stacking context. */
+.tail {
+  --k: var(--card-scale, 1);
+  --tuck: calc(26px * var(--k));
+  position: absolute;
+  z-index: -1;
+  top: calc(var(--tail-top, 110) * 1px * var(--k));
+  left: calc(100% - var(--tuck));
+  width: calc(var(--tuck) + 44px * var(--k));
+  height: calc(22px * var(--k));
+  rotate: var(--rot, 0deg);
+  transform-origin: 0 50%;
+  box-shadow: inset 0 calc(-2px * var(--k)) 0 rgba(20, 16, 10, 0.22);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 9px * var(--k)) 50%, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+
+.tail[data-mark='liked'] {
+  background-color: var(--registration);
+}
+
+.tail[data-mark='disliked'] {
+  background-color: #3b342b;
 }
