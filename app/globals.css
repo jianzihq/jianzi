@@ -32,7 +32,7 @@
   --card-scale: 1;
   --card-w: calc(400px * var(--card-scale));
   --card-h: calc(500px * var(--card-scale));
-  --reading: 1.68;
+  --reading: 1.52;
 
   /* Body face: a kai that reads warm without pretending to be handwritten.
      LXGW WenKai is the intended webfont (SIL OFL) — system kai stands in until it

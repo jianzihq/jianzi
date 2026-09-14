@@ -252,7 +252,7 @@
 }
 
 .body p + p {
-  margin-top: 0.45em;
+  margin-top: 0.28em;
 }
 
 /* The first sentence carries a little more weight, the way a lede does. */
@@ -277,11 +277,11 @@
 .copy p + p,
 .copy figure + p,
 .copy p + figure {
-  margin-top: 0.55em;
+  margin-top: 0.32em;
 }
 
 .copy .figure {
-  margin-top: 0.55em;
+  margin-top: 0.32em;
 }
 
 .figure {

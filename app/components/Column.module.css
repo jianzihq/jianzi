@@ -175,7 +175,7 @@
   margin: 0;
   font-family: var(--serif);
   font-size: 16px;
-  line-height: 1.72;
+  line-height: 1.58;
   text-align: justify;
 }
 
@@ -183,7 +183,7 @@
 .body p + figure,
 .body figure + p,
 .body figure + figure {
-  margin-top: 0.7em;
+  margin-top: 0.42em;
 }
 
 .body p:first-child::first-line {
