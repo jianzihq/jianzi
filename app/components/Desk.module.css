@@ -1,0 +1,47 @@
+.viewport {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  /* The desk ground. Flat colour until the texture lands — see docs/desk-ground-request.md */
+  background: var(--desk);
+}
+
+.viewport:active {
+  cursor: grabbing;
+}
+
+.plane {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+
+.slot {
+  position: absolute;
+  /* Cards are placed by their centre, so the card's own size does not shift the slot. */
+  transform: translate(-50%, -50%) scale(var(--depth));
+  transform-origin: 50% 50%;
+  opacity: var(--dim);
+  /* Promote each slot so the deckle filter is rasterised once and the per-frame scale
+     and opacity stay on the compositor. Without it, twenty filtered sheets would be
+     re-filtered on every frame of a pan. */
+  will-change: transform, opacity;
+  /* Neither is animated: the rAF loop writes both every frame, and a transition on top
+     would fight it and lag the pan. */
+}
+
+.hud {
+  position: fixed;
+  left: 26px;
+  bottom: 22px;
+  z-index: 10;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--ink-soft);
+  opacity: 0.7;
+  pointer-events: none;
+}
