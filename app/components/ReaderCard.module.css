@@ -90,6 +90,12 @@
   rotate: 6deg;
 }
 
+/* Tucked, the card keeps the height of a name alone, so the same corner of it shows however much
+   the reader wrote about themselves. */
+.corner[data-tucked='true'] .headline {
+  display: none;
+}
+
 .corner[data-tucked='true'] .card:hover {
   translate: 240px -44px;
 }
@@ -158,7 +164,8 @@
 
 .holder {
   display: flex;
-  align-items: center;
+  /* The portrait keeps to the top row, so an introduction lengthens the card downward only. */
+  align-items: flex-start;
   gap: 10px;
   min-width: 0;
 }
@@ -183,6 +190,27 @@
   font-size: 14px;
   color: var(--paper);
   background: var(--ink-soft);
+}
+
+/* The name and, beneath it, the one-line introduction the reader wrote on Zhihu, set like the
+   credential line under a byline and cut at two lines. */
+.who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.headline {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-family: var(--serif);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-soft);
 }
 
 .name {

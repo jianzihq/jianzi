@@ -25,7 +25,7 @@ const NOTICE_TEXT = {
  * lies in full view with the Zhihu login on it: a card rather than another tab, because signing
  * in is not a way of looking at the desk, and it has to be found. Registered, it has done its
  * asking and is tucked into the corner with only the reader's portrait showing, pulled out by a
- * click for the name and signing out. It steps away while a card is open.
+ * click for the name, the one-line introduction the reader wrote on Zhihu, and signing out. It steps away while a card is open.
  * docs/backend-requirements.md §4.4.
  */
 export function ReaderCard({ hidden }: { hidden: boolean }) {
@@ -102,7 +102,12 @@ export function ReaderCard({ hidden }: { hidden: boolean }) {
                 {(account.user.name || '读').slice(0, 1)}
               </span>
             )}
-            <span className={styles.name}>{account.user.name || '知乎读者'}</span>
+            <span className={styles.who}>
+              <span className={styles.name}>{account.user.name || '知乎读者'}</span>
+              {account.user.headline && (
+                <span className={styles.headline}>{account.user.headline}</span>
+              )}
+            </span>
           </span>
         </button>
       )}
