@@ -136,15 +136,6 @@
   background-size: 3px 3px;
 }
 
-.seal img {
-  object-fit: contain;
-  filter: none;
-}
-
-.seal::after {
-  content: none;
-}
-
 .name {
   font-family: var(--song);
   font-size: 16px;

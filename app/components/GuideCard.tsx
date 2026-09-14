@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { paperOffset, paperTilt, plateOffset, deckleIndex, slipPose } from '@/lib/paper'
 import { DECKLE_COUNT } from './Deckle'
 import { GUIDE_AVATAR, GUIDE_BODY, GUIDE_ID, GUIDE_SLIP, GUIDE_TITLE } from '@/lib/guide'
@@ -48,8 +49,8 @@ export function GuideCard() {
       </h2>
 
       <div className={card.byline}>
-        <span className={`${card.portrait} ${card.seal}`}>
-          <img src={GUIDE_AVATAR} alt="" width={38} height={38} />
+        <span className={card.portrait}>
+          <Image src={GUIDE_AVATAR} alt="" width={38} height={38} />
         </span>
         <span className={card.who}>
           <div className={card.name}>见字</div>
