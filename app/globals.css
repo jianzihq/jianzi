@@ -18,8 +18,23 @@
 
   --rule: #cbc3b4;
 
+  /* The slip is a second, warmer stock — it has to read as a different piece of paper. */
+  --slip: #e3d6bb;
+  --slip-edge: #cdbc9a;
+  /* Editors marked up proofs in blue pencil. The only handwriting on screen. */
+  --pencil: #3f4a6b;
+
   --card-w: 400px;
-  --reading: 1.9;
+  --card-h: 560px;
+  --reading: 1.95;
+
+  /* Body face: a kai that reads warm without pretending to be handwritten.
+     LXGW WenKai is the intended webfont (SIL OFL) — system kai stands in until it
+     is subset at build time against the pool. */
+  --serif: 'LXGW WenKai', 'Songti SC', STSong, SimSun, 'Noto Serif SC', serif;
+  --song: 'Songti SC', STSong, SimSun, 'Noto Serif SC', serif;
+  --kai: 'Kaiti SC', STKaiti, KaiTi, 'LXGW WenKai', cursive;
+  --mono: 'SF Mono', Menlo, 'Noto Sans Mono CJK SC', monospace;
 }
 
 * {

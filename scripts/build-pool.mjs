@@ -2,7 +2,9 @@
 /**
  * Build content/pool.json from raw Zhihu open-platform search responses.
  *
- * Usage: node scripts/build-pool.mjs [inputDir]   (default ../probe-raw)
+ * Usage: node scripts/build-pool.mjs [inputDir]   (default ../pool-raw)
+ *
+ * Input is whatever scripts/fetch-seeds.mjs wrote: raw zhihu_search responses.
  *
  * Entry bar (PRODUCT.md section 7): an author name must be present. Roughly 60% of
  * raw results have none, and a deck of anonymous cards cannot deliver "看见一个人".
@@ -18,7 +20,7 @@ import { createHash } from 'node:crypto'
 import path from 'node:path'
 
 const DEFAULT_AVATAR = 'da8e974dc' // Zhihu's anonymous placeholder
-const inputDir = process.argv[2] ?? path.join(import.meta.dirname, '..', '..', 'probe-raw')
+const inputDir = process.argv[2] ?? path.join(import.meta.dirname, '..', '..', 'pool-raw')
 const avatarDir = path.join(import.meta.dirname, '..', 'public', 'avatars')
 const outFile = path.join(import.meta.dirname, '..', 'content', 'pool.json')
 
@@ -33,7 +35,7 @@ async function saveAvatar(url) {
   return `/avatars/${name}`
 }
 
-const files = (await readdir(inputDir)).filter((f) => f.startsWith('s') && f.endsWith('.json'))
+const files = (await readdir(inputDir)).filter((f) => f.endsWith('.json'))
 const items = []
 for (const f of files) {
   const body = JSON.parse(await readFile(path.join(inputDir, f), 'utf8'))

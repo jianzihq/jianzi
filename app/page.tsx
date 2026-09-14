@@ -1,19 +1,21 @@
-import Image from 'next/image'
+import { Card } from './components/Card'
 import { pool } from '@/lib/pool'
 import styles from './page.module.css'
 
 /**
- * Proof sheet. Scaffolding only — it shows that the pool loads and what each card
- * actually carries, so the curation pass can see the gaps. The card table and the
- * flip-to-column view replace this page; see DESIGN.md.
+ * A flat spread of card fronts. Scaffolding for judging the card itself — the card
+ * table with its depth, dragging and flip replaces this. See DESIGN.md sections 3-5.
  */
 export default function Page() {
+  const withReason = pool.filter((c) => c.reason).length
   const withComments = pool.filter((c) => c.comments.length > 0).length
-  const withBadge = pool.filter((c) => c.author?.badge).length
-  const needsCuration = pool.filter((c) => !c.domain || !c.reason).length
+  const old = pool.filter((c) => c.stats.year < 2026).length
+
+  // Cards carrying a written reason first — those are the ones worth looking at.
+  const spread = [...pool].sort((a, b) => Number(Boolean(b.reason)) - Number(Boolean(a.reason)))
 
   return (
-    <main className={styles.sheet}>
+    <main className={styles.desk}>
       <header className={styles.masthead}>
         <h1 className={styles.title}>见字</h1>
         <p className={styles.tagline}>
@@ -23,50 +25,18 @@ export default function Page() {
 
       <div className={styles.status}>
         <span>{pool.length} 张卡</span>
-        <span>
-          {withBadge} 张有认证文案
-        </span>
+        <span>{old} 张早于 2026</span>
         <span>{withComments} 张有精选评论</span>
-        <span className={needsCuration ? styles.todo : undefined}>
-          {needsCuration} 张待补领域与理由
+        <span className={withReason < pool.length ? styles.todo : undefined}>
+          {withReason} / {pool.length} 张已有理由
         </span>
       </div>
 
-      {pool.map((card) => (
-        <article key={card.id} className={styles.entry}>
-          <h2 className={styles.head}>{card.title}</h2>
-
-          <div className={styles.byline}>
-            {card.author ? (
-              <>
-                {card.author.avatar && (
-                  <Image
-                    className={styles.avatar}
-                    src={card.author.avatar}
-                    alt=""
-                    width={28}
-                    height={28}
-                  />
-                )}
-                <span>{card.author.name}</span>
-                {card.author.badge && <span>· {card.author.badge}</span>}
-              </>
-            ) : (
-              <span>署名不详</span>
-            )}
-          </div>
-
-          <p className={styles.excerpt}>{card.excerpt}</p>
-
-          <div className={styles.meta}>
-            知乎 · {card.stats.year} · {card.stats.votes} 赞 · {card.stats.comments} 评
-            {card.comments.length > 0 && ` · ${card.comments.length} 条精选评论`}
-            {(!card.domain || !card.reason) && (
-              <span className={styles.todo}> · 待补领域与理由</span>
-            )}
-          </div>
-        </article>
-      ))}
+      <div className={styles.spread}>
+        {spread.map((card) => (
+          <Card key={card.id} card={card} />
+        ))}
+      </div>
     </main>
   )
 }
