@@ -7,15 +7,15 @@
   /* Away from the middle, everything but the title and the stamp sinks to a faint
      remainder rather than vanishing: the title still does the calling, while the page
      under it stays visibly a page of writing. PRODUCT section 5 — reveal too much and
-     there is no surprise left, reveal nothing and it is a raffle. The floor is the one
-     number to tune; the whole card's own dimming multiplies on top of it.
-     --focus comes from the desk, which writes it onto the slot every frame. The card must
-     not declare it: a declaration on the element outranks the inherited value, and every
-     card would believe it sits in the middle. Where nothing writes it — the list view —
-     its registered initial value of 1 leaves the card fully present. */
-  --reveal-floor: 0.26;
+     there is no surprise left, reveal nothing and it is a raffle. How far it sinks is set
+     by the view (LAYOUTS in lib/desk.ts); the card's own dimming multiplies on top.
+     --focus and --reveal-floor both come from outside: the desk writes focus onto the slot
+     every frame, and the view sets the floor on its container. The card must declare
+     neither, since a declaration on the element outranks the inherited value. Where
+     nothing supplies them, as in the list view, focus is 1 by registration and the floor
+     falls back to 1, so the card is fully present. */
   --reveal: calc(
-    var(--reveal-floor) + (1 - var(--reveal-floor)) *
+    var(--reveal-floor, 1) + (1 - var(--reveal-floor, 1)) *
       clamp(0, calc((var(--focus) - 0.5) * 2.6), 1)
   );
 

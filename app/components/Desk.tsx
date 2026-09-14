@@ -3,7 +3,17 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useGesture } from '@use-gesture/react'
 import type { Card as CardData } from '@/lib/types'
-import { slotsInView, focusAt, pushAt, slotCentre, cellAt, type Slot } from '@/lib/desk'
+import {
+  slotsInView,
+  focusAt,
+  pushAt,
+  slotCentre,
+  cellAt,
+  LAYOUTS,
+  type Layout,
+  type Slot,
+  type View,
+} from '@/lib/desk'
 import { paperOffset, paperTilt } from '@/lib/paper'
 import { domainInk } from '@/lib/domains'
 import { Card } from './Card'
@@ -20,8 +30,13 @@ const TURN_MS = 720
 const GRACE_MS = 160
 
 /** How the desk draws a card at a given focus. Shared with the overlay's closed pose. */
-const depthAt = (f: number): number => 0.78 + 0.22 * f
+const depthAt = (f: number, layout: Layout): number =>
+  layout.depthMin + (1 - layout.depthMin) * f
 const dimAt = (f: number): number => 0.3 + 0.7 * f
+
+/** The desk opens compact. The choice is not remembered — see switchView. */
+const DEFAULT_VIEW: View = 'compact'
+const VIEW_LABEL: Record<View, string> = { compact: '紧凑', loose: '宽松' }
 
 type Vec = { x: number; y: number }
 
@@ -74,11 +89,15 @@ export function Desk({ cards }: { cards: CardData[] }) {
   /** Set when the desk must redraw even though the camera has not moved. */
   const dirty = useRef(true)
 
+  const [view, setView] = useState<View>(DEFAULT_VIEW)
+  /** Read by the frame loop and the handlers, which are bound once and never see new state. */
+  const layoutRef = useRef<Layout>(LAYOUTS[DEFAULT_VIEW])
+
   // Seeded with a laptop-sized viewport at the origin so the desk arrives with cards
   // already on it. slotsInView is pure, so the server and the first client render agree
   // and nothing pops in after hydration; the real viewport size refines it on mount.
   const [slots, setSlots] = useState<Slot[]>(() =>
-    slotsInView(0, 0, 1440, 900, cards.length),
+    slotsInView(0, 0, 1440, 900, cards.length, LAYOUTS[DEFAULT_VIEW]),
   )
   const slotKeys = useRef(slots.map((s) => s.key).join('|'))
 
@@ -193,8 +212,9 @@ export function Desk({ cards }: { cards: CardData[] }) {
       // Stepping by a cell width preserves whatever offset the drag left behind, which
       // parks the reader in the gap between two cards and keeps them there.
       const half = { x: size.current.x / 2, y: size.current.y / 2 }
-      const here = cellAt(target.current.x + half.x, target.current.y + half.y)
-      const next = slotCentre(here.i + step[0], here.j + step[1])
+      const L = layoutRef.current
+      const here = cellAt(target.current.x + half.x, target.current.y + half.y, L)
+      const next = slotCentre(here.i + step[0], here.j + step[1], L)
       target.current.x = next.x - half.x
       target.current.y = next.y - half.y
     }
@@ -227,20 +247,21 @@ export function Desk({ cards }: { cards: CardData[] }) {
 
       // Depth is opacity and scale only. A real blur across this many layers would
       // cost more than the illusion is worth — see PRODUCT section 8.
+      const L = layoutRef.current
       const midX = c.x + size.current.x / 2
       const midY = c.y + size.current.y / 2
       for (const { el, x, y, drift } of nodes.current.values()) {
         const f = focusAt(x - midX, y - midY)
-        const [px, py] = pushAt(x - midX, y - midY, drift)
+        const [px, py] = pushAt(x - midX, y - midY, drift, L)
         el.style.setProperty('--push-x', `${px.toFixed(1)}px`)
         el.style.setProperty('--push-y', `${py.toFixed(1)}px`)
         el.style.setProperty('--focus', f.toFixed(3))
-        el.style.setProperty('--depth', depthAt(f).toFixed(3))
+        el.style.setProperty('--depth', depthAt(f, L).toFixed(3))
         el.style.setProperty('--dim', dimAt(f).toFixed(3))
       }
 
       // React is woken only when the set of slots on screen actually changes.
-      const next = slotsInView(c.x, c.y, size.current.x, size.current.y, cards.length)
+      const next = slotsInView(c.x, c.y, size.current.x, size.current.y, cards.length, L)
       const key = next.map((s) => s.key).join('|')
       if (key !== slotKeys.current) {
         slotKeys.current = key
@@ -264,9 +285,10 @@ export function Desk({ cards }: { cards: CardData[] }) {
     const dx = x - (c.x + size.current.x / 2)
     const dy = y - (c.y + size.current.y / 2)
     const f = focusAt(dx, dy)
+    const L = layoutRef.current
     // The card is drawn pushed outward, so that is where it has to be picked up from.
-    const [px, py] = pushAt(dx, dy, drift)
-    return { x: dx + px, y: dy + py, s: depthAt(f), o: dimAt(f), f }
+    const [px, py] = pushAt(dx, dy, drift, L)
+    return { x: dx + px, y: dy + py, s: depthAt(f, L), o: dimAt(f), f }
   }, [])
 
   /** The sheet's length, and how much of it to show while it turns. */
@@ -467,86 +489,160 @@ export function Desk({ cards }: { cards: CardData[] }) {
     [close],
   )
 
+  /**
+   * Swap the desk's spacing without losing the reader's place.
+   *
+   * Cards are mapped by cell, so a cell holds the same card under either layout and the
+   * camera simply moves to where that cell now lies. A view parked between two cards keeps
+   * its offset from the nearer one, scaled to the new cell size.
+   *
+   * The choice is not remembered. Card positions are rendered on the server for the
+   * default view, so restoring a remembered one would rearrange the whole desk right after
+   * it loads.
+   */
+  const switchView = useCallback(
+    (next: View) => {
+      const was = layoutRef.current
+      const now = LAYOUTS[next]
+      if (isOpen.current || was === now) return
+      const half = { x: size.current.x / 2, y: size.current.y / 2 }
+      const mid = { x: current.current.x + half.x, y: current.current.y + half.y }
+      const cell = cellAt(mid.x, mid.y, was)
+      const before = slotCentre(cell.i, cell.j, was)
+      const after = slotCentre(cell.i, cell.j, now)
+      const camera = {
+        x: after.x + (mid.x - before.x) * (now.cellW / was.cellW) - half.x,
+        y: after.y + (mid.y - before.y) * (now.cellH / was.cellH) - half.y,
+      }
+      current.current = { ...camera }
+      target.current = { ...camera }
+      layoutRef.current = now
+      const nextSlots = slotsInView(
+        camera.x,
+        camera.y,
+        size.current.x,
+        size.current.y,
+        cards.length,
+        now,
+      )
+      slotKeys.current = nextSlots.map((s) => s.key).join('|')
+      setSlots(nextSlots)
+      dirty.current = true
+      setView(next)
+    },
+    [cards.length],
+  )
+
   const openedCard = opened ? cards[opened.index] : null
 
+  const layout = LAYOUTS[view]
+
   return (
-    <div ref={viewport} className={styles.viewport}>
-      <div ref={plane} className={styles.plane}>
-        {slots.map((slot) => (
-          <div
-            key={slot.key}
-            ref={registerSlot(slot)}
-            className={styles.slot}
-            style={{
-              left: slot.x,
-              top: slot.y,
-              visibility: opened?.key === slot.key ? 'hidden' : undefined,
-            }}
-            onPointerDown={() => {
-              moved.current = false
-            }}
-            onClick={() => open(slot)}
-          >
-            <Card card={cards[slot.index]} />
-          </div>
-        ))}
-      </div>
-
-      <div className={styles.hud}>拖动 · 触控板两指 · 方向键 / WASD</div>
-
-      {opened && openedCard && (
-        <>
-          <div
-            className={styles.backdrop}
-            data-on={phase !== 'enter' && phase !== 'returning'}
-            onClick={close}
-            aria-hidden="true"
-          />
-          <div
-            ref={stage}
-            className={styles.stage}
-            data-phase={phase}
-            tabIndex={-1}
-            onClick={onStageClick}
-          >
+    <>
+      <div
+        ref={viewport}
+        className={styles.viewport}
+        data-view={view}
+        style={
+          {
+            '--card-scale': layout.cardScale,
+            '--reveal-floor': layout.revealFloor,
+          } as React.CSSProperties
+        }
+      >
+        <div ref={plane} className={styles.plane}>
+          {slots.map((slot) => (
             <div
-              ref={flipper}
-              className={styles.flipper}
-              data-phase={phase}
-              onTransitionEnd={onTurnEnd}
-              style={
-                {
-                  '--paper-x': `${paperOffset(openedCard.id).x}px`,
-                  '--paper-y': `${paperOffset(openedCard.id).y}px`,
-                  '--stamp-ink': domainInk(openedCard.domain),
-                  '--card-tilt': `${paperTilt(openedCard.id).toFixed(2)}deg`,
-                  '--closed-h': `${opened.height}px`,
-                  '--column-w': 'min(640px, calc(100vw - 48px))',
-                  '--top': `${geom.top}px`,
-                  '--open-h': `${geom.openH}px`,
-                  '--from-x': `${from.x.toFixed(1)}px`,
-                  '--from-y': `${from.y.toFixed(1)}px`,
-                  '--from-s': from.s.toFixed(3),
-                  '--from-o': from.o.toFixed(3),
-                  '--from-f': from.f.toFixed(3),
-                } as React.CSSProperties
-              }
+              key={slot.key}
+              ref={registerSlot(slot)}
+              className={styles.slot}
+              style={{
+                left: slot.x,
+                top: slot.y,
+                visibility: opened?.key === slot.key ? 'hidden' : undefined,
+              }}
+              onPointerDown={() => {
+                moved.current = false
+              }}
+              onClick={() => open(slot)}
             >
-              <div className={`${styles.face} ${styles.front}`}>
-                <Card card={openedCard} />
-              </div>
-              <div className={`${styles.face} ${styles.back}`}>
-                <div ref={sheet}>
-                  <Column card={openedCard} />
+              <Card card={cards[slot.index]} />
+            </div>
+          ))}
+        </div>
+
+        <div className={styles.hud}>拖动 · 触控板两指 · 方向键 / WASD</div>
+
+        {opened && openedCard && (
+          <>
+            <div
+              className={styles.backdrop}
+              data-on={phase !== 'enter' && phase !== 'returning'}
+              onClick={close}
+              aria-hidden="true"
+            />
+            <div
+              ref={stage}
+              className={styles.stage}
+              data-phase={phase}
+              tabIndex={-1}
+              onClick={onStageClick}
+            >
+              <div
+                ref={flipper}
+                className={styles.flipper}
+                data-phase={phase}
+                onTransitionEnd={onTurnEnd}
+                style={
+                  {
+                    '--paper-x': `${paperOffset(openedCard.id).x}px`,
+                    '--paper-y': `${paperOffset(openedCard.id).y}px`,
+                    '--stamp-ink': domainInk(openedCard.domain),
+                    '--card-tilt': `${paperTilt(openedCard.id).toFixed(2)}deg`,
+                    '--closed-h': `${opened.height}px`,
+                    '--column-w': 'min(640px, calc(100vw - 48px))',
+                    '--top': `${geom.top}px`,
+                    '--open-h': `${geom.openH}px`,
+                    '--from-x': `${from.x.toFixed(1)}px`,
+                    '--from-y': `${from.y.toFixed(1)}px`,
+                    '--from-s': from.s.toFixed(3),
+                    '--from-o': from.o.toFixed(3),
+                    '--from-f': from.f.toFixed(3),
+                  } as React.CSSProperties
+                }
+              >
+                <div className={`${styles.face} ${styles.front}`}>
+                  <Card card={openedCard} />
+                </div>
+                <div className={`${styles.face} ${styles.back}`}>
+                  <div ref={sheet}>
+                    <Column card={openedCard} />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div className={styles.closeHint} data-on={phase === 'reading'}>
-            ESC 或点击四周放回桌上
-          </div>
-        </>
-      )}
-    </div>
+            <div className={styles.closeHint} data-on={phase === 'reading'}>
+              ESC 或点击四周放回桌上
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Outside the viewport, so a press here can never start a drag of the desk. */}
+      <nav className={styles.rail} data-hidden={active} aria-label="视图">
+        {(Object.keys(VIEW_LABEL) as View[]).map((v) => (
+          <button
+            key={v}
+            type="button"
+            className={styles.tab}
+            aria-pressed={view === v}
+            disabled={active}
+            onClick={() => switchView(v)}
+          >
+            {VIEW_LABEL[v]}
+          </button>
+        ))}
+      </nav>
+    </>
   )
 }

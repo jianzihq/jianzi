@@ -5,6 +5,12 @@
   cursor: grab;
   touch-action: none;
   /* The ground is painted on body so both views share one desk. */
+
+  /* Card size is redeclared here, off this view's own --card-scale. A var() inside a custom
+     property is resolved on the element that declares it, so a size declared on :root keeps
+     :root's scale whatever a view sets underneath. */
+  --card-w: calc(400px * var(--card-scale));
+  --card-h: calc(500px * var(--card-scale));
 }
 
 .viewport:active {
@@ -244,4 +250,64 @@
 
 .closeHint[data-on='true'] {
   opacity: 0.55;
+}
+
+/* ---- view switch ---- */
+
+/* Index tabs standing off the right edge of the desk, set vertically like a spine label. */
+.rail {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transform: translateY(-50%);
+  transition: opacity 240ms ease;
+}
+
+/* A card that is open owns the screen; the tabs step away rather than sit over it. */
+.rail[data-hidden='true'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tab {
+  writing-mode: vertical-rl;
+  padding: 16px 9px 16px 8px;
+  font-family: var(--song);
+  font-size: 13px;
+  letter-spacing: 0.32em;
+  color: var(--ink-soft);
+  background: var(--paper);
+  border: 1px solid var(--paper-edge);
+  border-right: 0;
+  box-shadow:
+    0 1px 1px rgba(60, 50, 35, 0.16),
+    -4px 6px 12px -6px rgba(60, 50, 35, 0.3);
+  cursor: pointer;
+  transform: translateX(6px);
+  transition:
+    transform 180ms ease,
+    color 180ms ease;
+}
+
+.tab:hover {
+  transform: translateX(0);
+  color: var(--ink);
+}
+
+/* The chosen tab is pulled out a little further and inked, with the stamp red along its edge. */
+.tab[aria-pressed='true'] {
+  transform: translateX(0);
+  color: var(--ink);
+  box-shadow:
+    inset 2px 0 0 var(--registration),
+    0 1px 1px rgba(60, 50, 35, 0.16),
+    -4px 6px 12px -6px rgba(60, 50, 35, 0.3);
+}
+
+.tab:disabled {
+  cursor: default;
 }

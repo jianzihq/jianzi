@@ -27,7 +27,9 @@
   /* Cards are laid out larger rather than transform-scaled: slots are promoted layers,
      and text scaled up past 1 on a promoted layer softens. Every length on the card
      front hangs off this one number, so line breaks stay exactly where they were. */
-  --card-scale: 1.2;
+  /* Each desk view sets its own on its container (LAYOUTS in lib/desk.ts). This default
+     serves everywhere else, such as the list view. */
+  --card-scale: 1;
   --card-w: calc(400px * var(--card-scale));
   --card-h: calc(500px * var(--card-scale));
   --reading: 1.95;
