@@ -14,10 +14,14 @@ import {
   type Slot,
   type View,
 } from '@/lib/desk'
+import type { TagId } from '@/lib/collections'
 import { paperOffset, paperTilt } from '@/lib/paper'
 import { domainInk } from '@/lib/domains'
 import { Card } from './Card'
 import { Column } from './Column'
+import { ListView } from './ListView'
+import { Shelf, DragGhost } from './Shelf'
+import { useCollect } from './useCollect'
 import styles from './Desk.module.css'
 
 /** How hard the drawn position chases the one input asked for. Lower is more syrup. */
@@ -36,7 +40,14 @@ const dimAt = (f: number): number => 0.3 + 0.7 * f
 
 /** The desk opens compact. The choice is not remembered — see switchView. */
 const DEFAULT_VIEW: View = 'compact'
-const VIEW_LABEL: Record<View, string> = { compact: '紧凑', loose: '宽松' }
+
+/** The tabs on the right: two ways of laying out the desk, and the flat list. */
+type Tab = View | 'list'
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'compact', label: '紧凑' },
+  { id: 'loose', label: '宽松' },
+  { id: 'list', label: '列表' },
+]
 
 type Vec = { x: number; y: number }
 
@@ -45,12 +56,12 @@ type Vec = { x: number; y: number }
  *
  *   idle → enter → turning → reading → [rewind] → prereturn → returning → idle
  *
- * enter      mounted exactly on the desk card, measured, not yet moving
+ * enter      mounted exactly on the card it stands in for, measured, not yet moving
  * turning    turning over; all growth lands in the first half, so the back arrives at size
  * reading    flat and full length; the stage scrolls the whole sheet
  * rewind     sliding the sheet back to its head, only when it was scrolled
  * prereturn  back in 3D at the open pose — on screen, identical to the frame before
- * returning  turning back and shrinking onto the card on the desk
+ * returning  turning back and shrinking onto the card it came from
  *
  * Each step is advanced by the transition that ends it. Timers only stand in for a
  * transitionend that never arrives, and every step first checks that it still belongs to
@@ -59,18 +70,20 @@ type Vec = { x: number; y: number }
  */
 type Phase = 'idle' | 'enter' | 'turning' | 'reading' | 'rewind' | 'prereturn' | 'returning'
 
+/** Where an opened card lies, to find it on screen again when putting it back. */
+type Source =
+  | { kind: 'desk'; x: number; y: number; drift: number }
+  | { kind: 'list'; el: HTMLElement }
+
 type Opened = {
   key: string
-  index: number
-  /** Desk position of the slot, to find the card on screen again when putting it back. */
-  x: number
-  y: number
-  drift: number
+  card: CardData
+  source: Source
   /** The clipping's own height, so the closed pose is the card's real size. */
   height: number
 }
 
-/** Where a card is on screen relative to the middle, and how the desk is drawing it. */
+/** Where a card is on screen relative to the middle, and how its view is drawing it. */
 type Pose = { x: number; y: number; s: number; o: number; f: number }
 
 export function Desk({ cards }: { cards: CardData[] }) {
@@ -92,6 +105,11 @@ export function Desk({ cards }: { cards: CardData[] }) {
   const [view, setView] = useState<View>(DEFAULT_VIEW)
   /** Read by the frame loop and the handlers, which are bound once and never see new state. */
   const layoutRef = useRef<Layout>(LAYOUTS[DEFAULT_VIEW])
+  /** The list is a third view laid over the desk; the desk keeps its place underneath. */
+  const [listOpen, setListOpen] = useState(false)
+  const listRef = useRef(false)
+  /** The favourite tag the list is narrowed to, or null for every card. */
+  const [filter, setFilter] = useState<TagId | null>(null)
 
   // Seeded with a laptop-sized viewport at the origin so the desk arrives with cards
   // already on it. slotsInView is pure, so the server and the first client render agree
@@ -120,6 +138,22 @@ export function Desk({ cards }: { cards: CardData[] }) {
   /** Read inside the gesture handlers, which are bound once and never see new state. */
   const isOpen = useRef(false)
 
+  const blocked = useCallback(() => isOpen.current, [])
+
+  /** Open the list narrowed to a tag. Clicking the tag already shown goes back to every card. */
+  const showTag = useCallback((tag: TagId) => {
+    if (isOpen.current) return
+    const wasList = listRef.current
+    setFilter((f) => (wasList && f === tag ? null : tag))
+    listRef.current = true
+    setListOpen(true)
+  }, [])
+
+  const { collections, remove, pressCard, pressTag, ghost, isLifting, liftedLastPress } = useCollect(
+    cards,
+    { blocked, onTagClick: showTag },
+  )
+
   const registerSlot = useCallback((slot: Slot) => (el: HTMLDivElement | null) => {
     if (el) nodes.current.set(slot.key, { el, x: slot.x, y: slot.y, drift: slot.drift })
     else nodes.current.delete(slot.key)
@@ -140,11 +174,11 @@ export function Desk({ cards }: { cards: CardData[] }) {
 
   useGesture(
     {
-      // Dragging blank desk moves the desk. Signs match grabbing the paper itself.
+      // Dragging the desk moves the desk. Signs match grabbing the paper itself.
       onDrag: ({ delta: [dx, dy], last, velocity, direction, movement }) => {
-        // While a card is turned over the desk holds still, or closing it would reveal
-        // a desk that has wandered off somewhere behind the reader's back.
-        if (isOpen.current) return
+        // The desk holds still while a card is turned over, while the list covers it, and
+        // while a card has been lifted off it to be filed.
+        if (isOpen.current || listRef.current || isLifting()) return
         if (Math.hypot(movement[0], movement[1]) > 5) moved.current = true
         target.current.x -= dx
         target.current.y -= dy
@@ -160,13 +194,13 @@ export function Desk({ cards }: { cards: CardData[] }) {
       // natural-scroll setting is already baked in and must not be second-guessed.
       onWheel: ({ delta: [dx, dy], event }) => {
         // ctrl+wheel is the trackpad pinch. Over the desk it would zoom the whole page out
-        // from under the fixed layout, so it is cancelled there. Over an open column it is
-        // left alone: enlarging text to read it is a fair thing to want.
+        // from under the fixed layout, so it is cancelled there. Over an open column or the
+        // list it is left alone: enlarging text to read it is a fair thing to want.
         if (event.ctrlKey) {
-          if (!isOpen.current) event.preventDefault()
+          if (!isOpen.current && !listRef.current) event.preventDefault()
           return
         }
-        if (isOpen.current) return
+        if (isOpen.current || listRef.current) return
         target.current.x += dx
         target.current.y += dy
       },
@@ -202,8 +236,8 @@ export function Desk({ cards }: { cards: CardData[] }) {
       const el = e.target as HTMLElement | null
       if (el?.isContentEditable || /^(input|textarea|select)$/i.test(el?.tagName ?? '')) return
 
-      // An open column is focused and scrolls natively, so its keys are left to it.
-      if (isOpen.current) return
+      // An open column and the list are focused and scroll natively; their keys are theirs.
+      if (isOpen.current || listRef.current) return
       const step = STEP[e.key.toLowerCase()]
       if (!step) return
       e.preventDefault()
@@ -291,6 +325,22 @@ export function Desk({ cards }: { cards: CardData[] }) {
     return { x: dx + px, y: dy + py, s: depthAt(f, L), o: dimAt(f), f }
   }, [])
 
+  const poseFor = useCallback(
+    (source: Source): Pose => {
+      if (source.kind === 'desk') return poseOf(source.x, source.y, source.drift)
+      // The list lays its cards out flat and at full size, so only the position is needed.
+      const r = source.el.getBoundingClientRect()
+      return {
+        x: r.left + r.width / 2 - window.innerWidth / 2,
+        y: r.top + r.height / 2 - window.innerHeight / 2,
+        s: 1,
+        o: 1,
+        f: 1,
+      }
+    },
+    [poseOf],
+  )
+
   /** The sheet's length, and how much of it to show while it turns. */
   const measureSheet = useCallback(() => {
     const length = sheet.current?.offsetHeight ?? 900
@@ -312,15 +362,15 @@ export function Desk({ cards }: { cards: CardData[] }) {
     [isLive, setPhase],
   )
 
-  /** Turn back onto wherever the card on the desk is at this moment. */
+  /** Turn back onto wherever the card it came from is at this moment. */
   const turnBack = useCallback(
     (g: number) => {
       const o = openedRef.current
-      if (o) setFrom(poseOf(o.x, o.y, o.drift))
+      if (o) setFrom(poseFor(o.source))
       setPhase('returning')
       window.setTimeout(() => finishReturn(g), TURN_MS + GRACE_MS)
     },
-    [finishReturn, poseOf, setPhase],
+    [finishReturn, poseFor, setPhase],
   )
 
   /** Back into 3D at the open pose, then turn. */
@@ -345,33 +395,49 @@ export function Desk({ cards }: { cards: CardData[] }) {
     [isLive, measureSheet, setPhase, turnBack],
   )
 
-  const open = useCallback(
-    (slot: Slot) => {
-      if (moved.current || phaseRef.current !== 'idle') return
+  /** Pick a card up from exactly where it lies and start turning it over. */
+  const openCard = useCallback(
+    (card: CardData, key: string, source: Source, article: Element | null | undefined) => {
+      if (phaseRef.current !== 'idle') return false
       generation.current += 1
       isOpen.current = true
-
-      const card = nodes.current.get(slot.key)?.el.querySelector('article')
       const next: Opened = {
-        key: slot.key,
-        index: slot.index,
-        x: slot.x,
-        y: slot.y,
-        drift: slot.drift,
-        height: card instanceof HTMLElement ? card.offsetHeight : 520,
+        key,
+        card,
+        source,
+        height: article instanceof HTMLElement ? article.offsetHeight : 520,
       }
       openedRef.current = next
-      // Picked up from exactly where it lies, at the scale and dimming the desk is drawing it
-      // with, so there is never a second copy of the card in a second place.
-      setFrom(poseOf(slot.x, slot.y, slot.drift))
+      // At the scale and dimming its view is drawing it with, so there is never a second
+      // copy of the card in a second place.
+      setFrom(poseFor(source))
       setOpened(next)
       setPhase('enter')
+      return true
+    },
+    [poseFor, setPhase],
+  )
 
+  const open = useCallback(
+    (slot: Slot) => {
+      if (moved.current || liftedLastPress()) return
+      const article = nodes.current.get(slot.key)?.el.querySelector('article')
+      const source: Source = { kind: 'desk', x: slot.x, y: slot.y, drift: slot.drift }
+      if (!openCard(cards[slot.index], slot.key, source, article)) return
       // Bring it to the middle. The overlay travels there as part of the turn and the desk
       // card is hidden meanwhile, so the camera can take its own time.
       target.current = { x: slot.x - size.current.x / 2, y: slot.y - size.current.y / 2 }
     },
-    [poseOf, setPhase],
+    [cards, liftedLastPress, openCard],
+  )
+
+  const openFromList = useCallback(
+    (card: CardData, item: HTMLElement) => {
+      if (liftedLastPress()) return
+      const article = item.querySelector('article')
+      if (article) openCard(card, `list:${card.id}`, { kind: 'list', el: article }, article)
+    },
+    [liftedLastPress, openCard],
   )
 
   const close = useCallback(() => {
@@ -533,8 +599,29 @@ export function Desk({ cards }: { cards: CardData[] }) {
     [cards.length],
   )
 
-  const openedCard = opened ? cards[opened.index] : null
+  const chooseTab = useCallback(
+    (tab: Tab) => {
+      if (isOpen.current) return
+      if (tab === 'list') {
+        listRef.current = true
+        setListOpen(true)
+        setFilter(null)
+        return
+      }
+      if (listRef.current) {
+        listRef.current = false
+        setListOpen(false)
+        // The desk sat hidden under the list; draw it again as it was left.
+        dirty.current = true
+      }
+      switchView(tab)
+    },
+    [switchView],
+  )
 
+  const showAll = useCallback(() => setFilter(null), [])
+
+  const openedCard = opened?.card ?? null
   const layout = LAYOUTS[view]
 
   return (
@@ -543,10 +630,12 @@ export function Desk({ cards }: { cards: CardData[] }) {
         ref={viewport}
         className={styles.viewport}
         data-view={view}
+        data-list={listOpen}
         style={
           {
-            '--card-scale': layout.cardScale,
-            '--reveal-floor': layout.revealFloor,
+            // The list lays cards out at their design size with all of their text.
+            '--card-scale': listOpen ? 1 : layout.cardScale,
+            '--reveal-floor': listOpen ? 1 : layout.revealFloor,
           } as React.CSSProperties
         }
       >
@@ -556,13 +645,15 @@ export function Desk({ cards }: { cards: CardData[] }) {
               key={slot.key}
               ref={registerSlot(slot)}
               className={styles.slot}
+              data-card={cards[slot.index].id}
               style={{
                 left: slot.x,
                 top: slot.y,
                 visibility: opened?.key === slot.key ? 'hidden' : undefined,
               }}
-              onPointerDown={() => {
+              onPointerDown={(e) => {
                 moved.current = false
+                pressCard(e, cards[slot.index])
               }}
               onClick={() => open(slot)}
             >
@@ -571,7 +662,20 @@ export function Desk({ cards }: { cards: CardData[] }) {
           ))}
         </div>
 
-        <div className={styles.hud}>拖动 · 触控板两指 · 方向键 / WASD</div>
+        <div className={styles.hud}>拖动 · 触控板两指 · 方向键 / WASD · 按住卡片拖进左侧标签</div>
+
+        {listOpen && (
+          <ListView
+            cards={cards}
+            filter={filter}
+            collections={collections}
+            hiddenId={opened?.source.kind === 'list' ? opened.card.id : null}
+            onOpen={openFromList}
+            onPress={pressCard}
+            onShowAll={showAll}
+            onRemove={remove}
+          />
+        )}
 
         {opened && openedCard && (
           <>
@@ -628,21 +732,30 @@ export function Desk({ cards }: { cards: CardData[] }) {
         )}
       </div>
 
-      {/* Outside the viewport, so a press here can never start a drag of the desk. */}
+      {/* Both rails sit outside the viewport, so a press on them never starts a drag of the desk. */}
       <nav className={styles.rail} data-hidden={active} aria-label="视图">
-        {(Object.keys(VIEW_LABEL) as View[]).map((v) => (
+        {TABS.map((tab) => (
           <button
-            key={v}
+            key={tab.id}
             type="button"
             className={styles.tab}
-            aria-pressed={view === v}
+            aria-pressed={tab.id === 'list' ? listOpen : !listOpen && view === tab.id}
             disabled={active}
-            onClick={() => switchView(v)}
+            onClick={() => chooseTab(tab.id)}
           >
-            {VIEW_LABEL[v]}
+            {tab.label}
           </button>
         ))}
       </nav>
+
+      <Shelf
+        collections={collections}
+        hidden={active}
+        activeTag={listOpen ? filter : null}
+        onPress={pressTag}
+        onKeyOpen={showTag}
+      />
+      <DragGhost ref={ghost} />
     </>
   )
 }

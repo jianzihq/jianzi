@@ -311,3 +311,35 @@
 .tab:disabled {
   cursor: default;
 }
+
+/* ---- the list, laid over the desk ---- */
+
+.viewport[data-list='true'],
+.viewport[data-list='true']:active {
+  cursor: auto;
+  touch-action: auto;
+}
+
+/* The desk keeps its place under the list but is neither seen nor reachable. */
+.viewport[data-list='true'] .plane,
+.viewport[data-list='true'] .hud {
+  visibility: hidden;
+}
+
+/* ---- filing ---- */
+
+.slot {
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* A tag is being carried over this card. */
+.slot[data-drop] article {
+  outline: 2px solid var(--registration);
+  outline-offset: 8px;
+}
+
+/* Held long enough to lift: the original stays put but reads as picked up. */
+.slot[data-lifted] {
+  opacity: 0.35;
+}

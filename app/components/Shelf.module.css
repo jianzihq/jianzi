@@ -1,0 +1,106 @@
+/* Kraft index tabs standing off the left edge, mirroring the view tabs on the right. */
+.shelf {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transform: translateY(-50%);
+  transition: opacity 240ms ease;
+}
+
+.shelf[data-hidden='true'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tag {
+  writing-mode: vertical-rl;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 8px 14px 9px;
+  font-family: var(--kai);
+  font-size: 14px;
+  letter-spacing: 0.22em;
+  color: var(--pencil);
+  background: var(--slip);
+  border: 1px solid var(--slip-edge);
+  border-left: 0;
+  box-shadow:
+    0 1px 1px rgba(60, 50, 35, 0.16),
+    4px 6px 12px -6px rgba(60, 50, 35, 0.3);
+  cursor: grab;
+  /* The tag is dragged, so the browser must not claim the gesture for scrolling. */
+  touch-action: none;
+  user-select: none;
+  transform: translateX(-6px);
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease;
+}
+
+.tag:hover,
+.tag[aria-pressed='true'] {
+  transform: translateX(0);
+}
+
+/* The tag the list is narrowed to: pulled out and marked along its edge in stamp red. */
+.tag[aria-pressed='true'] {
+  box-shadow:
+    inset -2px 0 0 var(--registration),
+    0 1px 1px rgba(60, 50, 35, 0.16),
+    4px 6px 12px -6px rgba(60, 50, 35, 0.3);
+}
+
+/* A card is being carried over this tag. */
+.tag[data-drop] {
+  transform: translateX(4px);
+  background-color: #d8c7a2;
+}
+
+.tag[data-pulse] {
+  animation: took 700ms ease;
+}
+
+@keyframes took {
+  30% {
+    transform: translateX(10px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.tag:disabled {
+  cursor: default;
+}
+
+.count {
+  writing-mode: horizontal-tb;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0;
+  color: var(--ink-soft);
+}
+
+.ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 60;
+  max-width: 260px;
+  padding: 8px 12px;
+  font-family: var(--kai);
+  font-size: 13px;
+  color: var(--pencil);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: var(--slip);
+  border: 1px solid var(--slip-edge);
+  box-shadow: 0 12px 24px -8px rgba(40, 33, 22, 0.45);
+  pointer-events: none;
+}
