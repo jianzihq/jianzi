@@ -247,7 +247,7 @@
   margin: 0;
   font-family: var(--serif);
   font-size: calc(15 * var(--u));
-  line-height: var(--reading);
+  line-height: 1.52;
   text-align: justify;
 }
 
@@ -270,7 +270,7 @@
   margin: 0;
   font-family: var(--serif);
   font-size: calc(15 * var(--u));
-  line-height: var(--reading);
+  line-height: 1.52;
   text-align: justify;
 }
 
