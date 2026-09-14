@@ -1,12 +1,13 @@
 /* The clipping on the desk. See DESIGN.md section 3. */
 
 .card {
-  /* Written by the desk every frame. On its own — the spread view, say — a card is
-     fully present. */
-  --focus: 1;
   /* Peripheral cards leak the title and the stamp and nothing else, which is what
      PRODUCT section 5 asks for: reveal too much and there is no surprise left, reveal
-     nothing and it is a raffle. */
+     nothing and it is a raffle.
+     --focus comes from the desk, which writes it onto the slot every frame. The card must
+     not declare it: a declaration on the element outranks the inherited value, and every
+     card would believe it sits in the middle. Where nothing writes it — the list view —
+     its registered initial value of 1 leaves the card fully present. */
   --reveal: clamp(0, calc((var(--focus) - 0.5) * 2.6), 1);
 
   position: relative;

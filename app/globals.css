@@ -74,3 +74,12 @@ html::-webkit-scrollbar,
 body::-webkit-scrollbar {
   display: none;
 }
+
+/* Registered so it can be animated: a card picked up from the edge of the desk eases from
+   its dimmed reveal to fully present while it turns, rather than its text popping in.
+   Initial value 1, so a card nothing writes to is simply fully present. */
+@property --focus {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}

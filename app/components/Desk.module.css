@@ -172,18 +172,24 @@
   left: 50%;
   width: var(--card-w);
   transform: translateX(-50%);
-  /* Dimmed as much as the desk was dimming it when it was picked up. */
+  /* Dimmed, and revealed, as much as the desk was showing it when it was picked up. */
   opacity: var(--from-o);
-  transition: opacity var(--half) var(--ease) var(--half);
+  --focus: var(--from-f);
+  transition:
+    opacity var(--half) var(--ease) var(--half),
+    --focus var(--half) var(--ease) var(--half);
 }
 
 .flipper[data-phase='turning'] .front,
 .flipper[data-phase='prereturn'] .front {
   opacity: 1;
+  --focus: 1;
 }
 
 .flipper[data-phase='turning'] .front {
-  transition: opacity var(--half) var(--ease);
+  transition:
+    opacity var(--half) var(--ease),
+    --focus var(--half) var(--ease);
 }
 
 .flipper[data-phase='enter'] .front,

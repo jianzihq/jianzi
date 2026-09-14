@@ -55,7 +55,7 @@ type Opened = {
 }
 
 /** Where a card is on screen relative to the middle, and how the desk is drawing it. */
-type Pose = { x: number; y: number; s: number; o: number }
+type Pose = { x: number; y: number; s: number; o: number; f: number }
 
 export function Desk({ cards }: { cards: CardData[] }) {
   const viewport = useRef<HTMLDivElement>(null)
@@ -86,7 +86,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
   const generation = useRef(0)
   const [opened, setOpened] = useState<Opened | null>(null)
   const openedRef = useRef<Opened | null>(null)
-  const [from, setFrom] = useState<Pose>({ x: 0, y: 0, s: 1, o: 1 })
+  const [from, setFrom] = useState<Pose>({ x: 0, y: 0, s: 1, o: 1, f: 1 })
   const [geom, setGeom] = useState({ top: 54, openH: 900 })
 
   const stage = useRef<HTMLDivElement>(null)
@@ -258,7 +258,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
     const dx = x - (c.x + size.current.x / 2)
     const dy = y - (c.y + size.current.y / 2)
     const f = focusAt(dx, dy)
-    return { x: dx, y: dy, s: depthAt(f), o: dimAt(f) }
+    return { x: dx, y: dy, s: depthAt(f), o: dimAt(f), f }
   }, [])
 
   /** The sheet's length, and how much of it to show while it turns. */
@@ -519,6 +519,7 @@ export function Desk({ cards }: { cards: CardData[] }) {
                   '--from-y': `${from.y.toFixed(1)}px`,
                   '--from-s': from.s.toFixed(3),
                   '--from-o': from.o.toFixed(3),
+                  '--from-f': from.f.toFixed(3),
                 } as React.CSSProperties
               }
             >
