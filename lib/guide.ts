@@ -3,10 +3,11 @@
  *
  * Server snapshot is "already seen" so SSR and the hydrated first paint have no card;
  * what this browser has actually kept arrives in the render right after. Returning
- * visitors never flash a card. First visitors see it settle onto the compact desk.
+ * visitors never flash a card. First visitors see it occupy the compact view's
+ * centre slot, the same way any other clipping sits in the lamp.
  */
 
-const STORAGE_KEY = 'jianzi:guide:v1'
+const STORAGE_KEY = 'jianzi:guide:v2'
 
 const listeners = new Set<() => void>()
 /** null until the first client read. */
