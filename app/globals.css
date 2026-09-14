@@ -63,3 +63,14 @@ body {
 a {
   color: inherit;
 }
+
+/* A scrollbar is a window's furniture, and there are no windows here — everything on
+   screen is meant to be a piece of paper on a desk. Keyboard and wheel still scroll. */
+html {
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+}
